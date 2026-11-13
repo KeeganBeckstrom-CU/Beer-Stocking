@@ -600,18 +600,17 @@ if(!Array.isArray(store.history)) store.history=[];
 if(store.lists.backstock){ if(store.stores[0]&&!store.lists["backstock:"+store.stores[0].id]) store.lists["backstock:"+store.stores[0].id]=store.lists.backstock; delete store.lists.backstock; }
 // Items whose pack changed: Super Lyte is an 8 can, Mike's Original and Black Cherry six-packs are cans
 const ID_RENAME={"super-lyte-12-can":"super-lyte-8-can","mike-s-original-6-btl":"mike-s-original-6-can","mike-s-black-cherry-6-btl":"mike-s-black-cherry-6-can"};
-// The 57-item back-stock sheet was counted at the first store (Kroger Hamburg), so only that store starts with it. Every other store's Backstock starts empty.
-const FIRST_BACKSTOCK="backstock:kroger-brighton";
-// One-time: take the sheet's items back off other stores that were given them, keeping anything with a count or a check
-if(store.bsV!==2){
-  for(const k in store.lists) if(k.startsWith("backstock:")&&k!==FIRST_BACKSTOCK){const l=store.lists[k];
+// Every store's Backstock list starts empty; nothing is pre-loaded.
+// One-time: take the old 57-item back-stock sheet off any store that was given it, keeping anything with a count or a check
+if(store.bsV!==3){
+  for(const k in store.lists) if(k.startsWith("backstock:")){const l=store.lists[k];
     l.list=(l.list||[]).filter(id=>!DEFAULT.includes(id)||(l.qty&&l.qty[id])||(l.seen&&l.seen[id]));}
-  store.bsV=2;
+  store.bsV=3;
 }
 // Lists are kept per store: "backstock:<store id>" for Backstock, "store:<store id>" (truck day), which starts from the truck day note
 function getList(c){
   let l=store.lists[c];
-  if(!l) l=store.lists[c]={list:(c.startsWith("backstock")?(c===FIRST_BACKSTOCK?DEFAULT:[]):TRUCK).slice(),qty:{},done:{},seen:{},note:{}};
+  if(!l) l=store.lists[c]={list:(c.startsWith("backstock")?[]:TRUCK).slice(),qty:{},done:{},seen:{},note:{}};
   ["qty","done","seen","note"].forEach(k=>{l[k]=l[k]||{}; for(const o in ID_RENAME) if(o in l[k]){l[k][ID_RENAME[o]]=l[k][o]; delete l[k][o];}});
   l.list=[...new Set((l.list||[]).map(id=>ID_RENAME[id]||id))].filter(id=>byId[id]);
   return l;
