@@ -199,29 +199,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <div id="screen-auth" hidden>
   <header class="hero"><div class="wrap"><img class="owlogo" alt="O&amp;W, Inc."><h1>Beer Stocking</h1><p class="tag">Check it · Count it · Pull it</p></div></header>
   <main class="wrap">
-    <form id="authform" class="form">
-      <h3>Sign in</h3>
-      <div class="field"><label for="au">Username</label><input id="au" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
-      <div class="field"><label for="ap">Password</label><input id="ap" type="password" autocomplete="current-password"></div>
-      <p id="aerr" class="err" hidden></p>
-      <div class="formbtns"><button type="submit" class="btn primary">Sign in</button><button type="button" id="signup" class="btn">Create account</button></div>
-      <p class="hint">New here? Type the username and password you want, then tap Create account. Accounts are saved on this phone only, so pick a simple password you don't use anywhere else.</p>
-    </form>
-  </main>
-</div>
-
-<div id="screen-profile" hidden>
-  <header class="top"><div class="wrap solo"><div class="titlerow"><h1>Your profile</h1></div></div></header>
-  <main class="wrap">
-    <form id="profform" class="form">
+    <form id="nameform" class="form">
+      <h3>Who's stocking?</h3>
       <div class="two">
         <div class="field"><label for="pf">First name</label><input id="pf" autocomplete="given-name"></div>
         <div class="field"><label for="pl">Last name</label><input id="pl" autocomplete="family-name"></div>
       </div>
-      <div class="group"><span class="glabel">Your main stores</span><div id="pstores" class="checks"></div></div>
-      <div class="field"><label for="pns">Add a store</label><div class="inline"><input id="pns" autocomplete="off" placeholder="e.g. Kroger Howell"><button type="button" id="paddstore" class="btn">Add</button></div></div>
       <p id="perr" class="err" hidden></p>
-      <button type="submit" class="btn primary">Save profile</button>
+      <button type="submit" class="btn primary">Continue</button>
+      <p class="hint">You only do this once. Your name, lists and history are saved on this phone.</p>
     </form>
   </main>
 </div>
@@ -238,7 +224,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
       <button id="go-truck" class="choice"><b>Truck Day</b><span id="home-truck-sub">Pick a store and work its truck list</span><span class="art" id="art-truck" aria-hidden="true"></span></button>
     </div>
     <div id="history"></div>
-    <div class="actions foot"><button id="editprofile" class="btn">Edit profile</button><button id="signout" class="btn">Sign out</button>
+    <div class="actions foot"><button id="editname" class="btn">Change name</button>
     </div>
   </main>
 </div>
@@ -568,8 +554,8 @@ function parseNote(text){
 
 // Everything saved on this phone: new items, the store names, and one list per place ("backstock" or "store:<id>")
 const KEY="back-stock-pull-v3";
-// accounts: {username:{salt,hash,name,main:[store ids]}}; session: signed-in username; history: saved pull lists
-let store={custom:[],stores:[{id:"kroger-brighton",name:"Kroger Hamburg"}],lists:{},accounts:{},session:null,history:[]};
+// me: the person using this phone; history: their saved pull lists
+let store={custom:[],stores:[{id:"kroger-brighton",name:"Kroger Hamburg"}],lists:{},me:null,history:[]};
 try{
   const s=JSON.parse(localStorage.getItem(KEY));
   if(s&&s.lists) store=Object.assign(store,s);
@@ -593,7 +579,9 @@ if(store.truckV!==2){
     ["qty","done","seen"].forEach(p=>{for(const id in (l[p]||{})) if(!TRUCK.includes(id)) delete l[p][id];});}
   store.truckV=2;
 }
-if(!store.accounts||typeof store.accounts!=="object") store.accounts={};
+// me = {first,last}: the person using this phone, asked once. Older versions kept username/password accounts; carry the name over and drop the rest.
+if(!store.me||!store.me.first){const a=store.accounts&&store.accounts[store.session]; store.me=a&&a.name?{first:a.name,last:a.last||""}:null;}
+delete store.accounts; delete store.session;
 if(!Array.isArray(store.history)) store.history=[];
 // The old single Backstock list now belongs to the first store
 if(store.lists.backstock){ if(store.stores[0]&&!store.lists["backstock:"+store.stores[0].id]) store.lists["backstock:"+store.stores[0].id]=store.lists.backstock; delete store.lists.backstock; }
@@ -608,7 +596,6 @@ function getList(c){
   return l;
 }
 let ctx="", mode="truck", state={list:[],qty:{},done:{},seen:{},note:{}};
-const acct=()=>store.accounts[store.session]||null;
 const prefix=()=>mode==="truck"?"store:":"backstock:";
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}};
 const full=it=>it.flavor?it.brand+" "+it.flavor:it.brand;
@@ -841,7 +828,7 @@ document.getElementById("tab-pull").addEventListener("click",()=>show("pull"));
 
 /* ---------- Screens: home, Truck Day stores, list ---------- */
 function showScreen(name){
-  ["auth","profile","home","stores","list"].forEach(s=>{document.getElementById("screen-"+s).hidden=s!==name;});
+  ["auth","home","stores","list"].forEach(s=>{document.getElementById("screen-"+s).hidden=s!==name;});
   if(name==="home") renderHome();
   if(name==="stores") renderStores();
   window.scrollTo(0,0);
@@ -852,8 +839,8 @@ function summary(c){
   return n?`${n} item${n===1?"":"s"} with counts`:`${(l.list||[]).length} items on the list, no counts yet`;
 }
 function renderHome(){
-  const a=acct(), n=store.stores.length, s=`${n} store${n===1?"":"s"}`;
-  document.getElementById("welcome").textContent=a&&a.name?"Welcome, "+a.name:"Welcome";
+  const n=store.stores.length, s=`${n} store${n===1?"":"s"}`;
+  document.getElementById("welcome").textContent=store.me&&store.me.first?"Welcome, "+store.me.first:"Welcome";
   document.getElementById("home-back-sub").textContent="Pick a store, check the floor and pull from back stock · "+s;
   document.getElementById("home-truck-sub").textContent="Pick a store and work its truck list · "+s;
   renderHistory();
@@ -865,9 +852,6 @@ function showStores(m){
   document.getElementById("pastewrap").hidden=m!=="truck";
   showScreen("stores");
 }
-// Stores on the signed-in person's profile come first
-function orderedStores(){const main=(acct()&&acct().main)||[]; return store.stores.slice().sort((x,y)=>main.includes(y.id)-main.includes(x.id));}
-const mainTag=s=>acct()&&(acct().main||[]).includes(s.id)?"Your store · ":"";
 function openList(c){
   ctx=c; state=getList(c);
   const truck=c.startsWith("store:"), sid=c.slice(c.indexOf(":")+1), st=store.stores.find(s=>s.id===sid);
@@ -882,7 +866,7 @@ function openList(c){
 let armedStore=null;
 function renderStores(){
   const el=document.getElementById("storelist");
-  el.innerHTML=store.stores.length?orderedStores().map(s=>`<div class="storerow"><button class="choice" data-store="${esc(s.id)}"><b>${esc(s.name)}</b><span>${mainTag(s)}${summary(prefix()+s.id)}</span></button><button class="rm${armedStore===s.id?" arm":""}" data-rm="${esc(s.id)}" aria-label="Remove ${esc(s.name)}">${armedStore===s.id?"Tap again":"Remove"}</button></div>`).join("")
+  el.innerHTML=store.stores.length?store.stores.map(s=>`<div class="storerow"><button class="choice" data-store="${esc(s.id)}"><b>${esc(s.name)}</b><span>${summary(prefix()+s.id)}</span></button><button class="rm${armedStore===s.id?" arm":""}" data-rm="${esc(s.id)}" aria-label="Remove ${esc(s.name)}">${armedStore===s.id?"Tap again":"Remove"}</button></div>`).join("")
     :`<div class="empty">No stores yet. Add one below.</div>`;
 }
 document.getElementById("storelist").addEventListener("click",e=>{
@@ -893,8 +877,7 @@ document.getElementById("storelist").addEventListener("click",e=>{
   if(armedStore!==id){armedStore=id;renderStores();clearTimeout(renderStores.h);renderStores.h=setTimeout(()=>{armedStore=null;renderStores();},3000);return;}
   clearTimeout(renderStores.h);armedStore=null;
   const gone=store.stores.find(s=>s.id===id);
-  store.stores=store.stores.filter(s=>s.id!==id);delete store.lists["store:"+id];delete store.lists["backstock:"+id];
-  Object.values(store.accounts).forEach(a=>{a.main=(a.main||[]).filter(x=>x!==id);});save();renderStores();
+  store.stores=store.stores.filter(s=>s.id!==id);delete store.lists["store:"+id];delete store.lists["backstock:"+id];save();renderStores();
   toast("Removed "+(gone?gone.name:"store"));
 });
 document.getElementById("storeform").addEventListener("submit",e=>{
@@ -922,67 +905,25 @@ document.getElementById("go-truck").addEventListener("click",()=>showStores("tru
 document.getElementById("storesback").addEventListener("click",()=>showScreen("home"));
 document.getElementById("listback").addEventListener("click",()=>showStores(ctx.startsWith("store:")?"truck":"backstock"));
 
-/* ---------- Sign in and profile (kept on this phone; the password is a simple lock, stored scrambled) ---------- */
-async function hashPw(salt,pw){
-  const s=salt+"|"+pw;
-  try{const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)); return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");}
-  catch(e){let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return "x"+h.toString(16);}
+/* ---------- Name: asked once the first time the app opens, then remembered on this phone ---------- */
+function openName(){
+  document.getElementById("pf").value=(store.me&&store.me.first)||""; document.getElementById("pl").value=(store.me&&store.me.last)||"";
+  document.getElementById("perr").hidden=true; showScreen("auth");
 }
-async function doAuth(create){
-  const u=document.getElementById("au").value.trim().toLowerCase(), pw=document.getElementById("ap"), err=document.getElementById("aerr");
-  const fail=m=>{err.textContent=m;err.hidden=false;};
-  if(!/^[a-z0-9.-]{2,30}$/.test(u)) return fail("Type a username: 2 or more letters or numbers, no spaces.");
-  if(pw.value.length<4) return fail("Type a password with 4 or more characters.");
-  const a=Object.prototype.hasOwnProperty.call(store.accounts,u)?store.accounts[u]:null;
-  if(create){
-    if(a) return fail("That username is already on this phone. Tap Sign in, or pick another username.");
-    const salt=Math.random().toString(36).slice(2)+Date.now().toString(36);
-    store.accounts[u]={salt,hash:await hashPw(salt,pw.value),name:"",main:[]};
-  }else{
-    if(!a) return fail("No account with that username on this phone. Tap Create account to make one.");
-    if(await hashPw(a.salt,pw.value)!==a.hash) return fail("That password doesn't match. Try again.");
-  }
-  store.session=u; save(); err.hidden=true; pw.value="";
-  if(store.accounts[u].name&&store.accounts[u].last) showScreen("home"); else openProfile();
-}
-document.getElementById("authform").addEventListener("submit",e=>{e.preventDefault();doAuth(false);});
-document.getElementById("signup").addEventListener("click",()=>doAuth(true));
-function renderChecks(checked){
-  document.getElementById("pstores").innerHTML=store.stores.length
-    ?store.stores.map(s=>`<label class="chk"><input type="checkbox" value="${esc(s.id)}"${checked.includes(s.id)?" checked":""}><span>${esc(s.name)}</span></label>`).join("")
-    :`<p class="hint">No stores yet. Add one below.</p>`;
-}
-const checkedStores=()=>[...document.querySelectorAll("#pstores input:checked")].map(i=>i.value);
-function openProfile(){
-  const a=acct(); if(!a){showScreen("auth");return;}
-  // name = first name (shown in the welcome), last = last name; older profiles had one name box
-  if(a.last===undefined&&a.name&&a.name.includes(" ")){const p=a.name.trim().split(/\s+/); a.name=p.shift(); a.last=p.join(" ");}
-  document.getElementById("pf").value=a.name||""; document.getElementById("pl").value=a.last||""; document.getElementById("perr").hidden=true;
-  renderChecks(a.main||[]); showScreen("profile");
-}
-document.getElementById("paddstore").addEventListener("click",()=>{
-  const inp=document.getElementById("pns"), err=document.getElementById("perr"), name=inp.value.trim();
-  if(!name){err.textContent="Type the store name first.";err.hidden=false;return;}
-  if(store.stores.some(s=>s.name.toLowerCase()===name.toLowerCase())){err.textContent="That store is already on the list.";err.hidden=false;return;}
-  err.hidden=true; const id=slug(name)+"-"+Date.now().toString(36), keep=checkedStores();
-  store.stores.push({id,name}); save(); inp.value=""; renderChecks(keep.concat(id));
-});
-document.getElementById("profform").addEventListener("submit",e=>{
+document.getElementById("nameform").addEventListener("submit",e=>{
   e.preventDefault();
-  const a=acct(), err=document.getElementById("perr"), first=document.getElementById("pf").value.trim(), last=document.getElementById("pl").value.trim();
-  if(!a){showScreen("auth");return;}
+  const err=document.getElementById("perr"), first=document.getElementById("pf").value.trim(), last=document.getElementById("pl").value.trim();
   if(!first||!last){err.textContent="Type your first and last name.";err.hidden=false;return;}
-  a.name=first; a.last=last; a.main=checkedStores(); save(); showScreen("home");
+  store.me={first,last}; save(); showScreen("home");
 });
-document.getElementById("editprofile").addEventListener("click",openProfile);
-document.getElementById("signout").addEventListener("click",()=>{store.session=null;save();document.getElementById("au").value="";showScreen("auth");});
+document.getElementById("editname").addEventListener("click",openName);
 
 /* ---------- History: every "Finish & save" on a pull list, totalled by store, week, month and product ---------- */
 armButton(document.getElementById("finish"),"Finish & save to history","Tap again to save and clear counts",()=>{
   const list=pulled(); if(!list.length){toast("Nothing to save yet");return;}
   const sid=ctx.slice(ctx.indexOf(":")+1), st=store.stores.find(s=>s.id===sid), items={};
   list.forEach(it=>{items[it.id]=state.qty[it.id];});
-  store.history.push({t:Date.now(),sid,sname:st?st.name:"Store",kind:ctx.startsWith("store:")?"truck":"backstock",user:store.session||"",items});
+  store.history.push({t:Date.now(),sid,sname:st?st.name:"Store",kind:ctx.startsWith("store:")?"truck":"backstock",user:store.me?store.me.first+" "+store.me.last:"",items});
   if(store.history.length>600) store.history=store.history.slice(-600);
   state.qty={};state.done={};state.seen={};state.note={};save();renderFill();renderPull();toast("Saved to history. Counts cleared.");
 });
@@ -1025,8 +966,8 @@ function renderHistory(){
  document.getElementById("art-truck").innerHTML=pics(["p:white-claw-vp1","p:truly-berry","p:twisted-tea-party-pack"]);
  const row=pics(["p:miller","p:coors","p:labatt-blue","p:white-claw-black-cherry","p:corona-extra","p:twisted-tea-original","p:yuengling-traditional","p:modelo","p:truly-strawberry-lemonade","p:guinness-draught","p:high-life","p:surfside-iced-tea","p:heineken","p:pbr","p:mike-s-original","p:blue-moon-white","p:athletic-run-wild","p:sun-cruiser-iced-tea-vodka","p:banquet","p:angry-orchard","p:sierra-nevada-hazy-ipa","p:super-lyte"]);
  const shelf=document.getElementById("shelf"); if(row) shelf.innerHTML=`<div class="shelf-track">${row}${row}</div>`; else shelf.hidden=true;}
-// Start: signed in with a finished profile goes home; otherwise sign in or finish the profile
-if(acct()){ if(acct().name&&acct().last) showScreen("home"); else openProfile(); } else showScreen("auth");
+// Start: a phone that already has a first and last name goes straight home; otherwise ask once
+if(store.me&&store.me.first&&store.me.last) showScreen("home"); else openName();
 </script>
 
 </body>
