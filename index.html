@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#1b3a8f">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px system-ui,-apple-system,"Segoe UI",sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Beer Stocking</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky header with two tabs; fill-in view grouped by category > brand, pull view grouped by back-stock section; full-screen add sheet */
+:root{
+  /* One bright look on purpose (no dark theme): golden backdrop, see-through cards, royal blue header */
+  --bg:#ffc93c; --surface:rgba(255,243,196,.58); --ink:#13235a; --muted:#3d4a7a; --line:rgba(19,35,90,.22);
+  --head:#1b3a8f; --head-ink:#fff7d6; --accent:#ffd84d; --accent-ink:#13235a; --done:#177a43; --danger:#b8241a;
+  --hot:#ff6b1a; --can:#134f9c; --btl:#8a2f0c; --beer:#ff8a1f; --beer2:#e2520d; --foam:#fff7d6;
+  --shadow:0 6px 18px rgba(19,35,90,.12);
+  --backdrop:
+    radial-gradient(circle at 14% 12%,rgba(255,247,214,.55) 0 34px,transparent 35px),
+    radial-gradient(circle at 84% 24%,rgba(255,247,214,.40) 0 58px,transparent 59px),
+    radial-gradient(circle at 66% 62%,rgba(255,247,214,.35) 0 22px,transparent 23px),
+    radial-gradient(circle at 20% 76%,rgba(255,247,214,.40) 0 70px,transparent 71px),
+    radial-gradient(circle at 92% 90%,rgba(255,247,214,.45) 0 30px,transparent 31px),
+    radial-gradient(90% 60% at 100% 0%,rgba(255,94,58,.50),transparent 70%),
+    radial-gradient(80% 60% at 0% 100%,rgba(255,138,31,.60),transparent 70%),
+    linear-gradient(165deg,#ffe45c 0%,#ffc93c 50%,#ffab2e 100%);
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--backdrop)}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--head)}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--head);color:var(--head-ink)}
+.top .wrap{padding-block:12px 0}
+.titlerow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.titlerow h1{flex:1;min-width:0;overflow-wrap:break-word}
+#date{flex:none}
+.top .wrap.solo{padding-block:12px}
+.backbtn{flex:none;font:600 15px var(--body);color:var(--head-ink);background:transparent;border:1px solid color-mix(in srgb,var(--head-ink) 35%,transparent);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.choices{display:grid;gap:10px;margin-top:12px}
+.choice{display:grid;gap:4px;text-align:left;width:100%;padding:18px 16px;border:1.5px solid var(--line);border-radius:18px;box-shadow:var(--shadow);background:var(--surface);color:var(--ink);cursor:pointer;font-family:var(--body)}
+.choice b{font-family:var(--display);font-size:26px;text-transform:uppercase;letter-spacing:.02em;overflow-wrap:anywhere}
+.choice span{font-size:14px;color:var(--muted)}
+.storerow{display:flex;gap:8px;align-items:stretch}
+.storerow .choice{flex:1;min-width:0}
+.rm{flex:none;font:600 13px var(--body);padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--muted);cursor:pointer}
+.rm.arm{background:var(--danger);color:#fff;border-color:var(--danger)}
+#storeform{margin-top:20px}
+/* pictures: cut-out product photos and logos sit straight on the backdrop, lifted by a soft shadow */
+.ph{flex:none;width:44px;height:60px;display:grid;place-items:center}
+.ph>img{width:auto;height:auto;max-width:44px;max-height:60px;object-fit:contain;display:block}
+/* drawn can / bottle for drinks with no photo of the right container; --c is the brand color */
+.ph{filter:drop-shadow(0 2px 3px rgba(19,35,90,.3))}
+.ph>img{filter:none}
+.mk{position:relative;display:grid;place-items:center;overflow:hidden}
+.mk img{width:auto;height:auto;object-fit:contain;display:block;filter:none}
+.mk.can{width:34px;height:58px;border-radius:7px/5px;background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(255,255,255,.75) 26%,rgba(255,255,255,.35) 58%,rgba(0,0,0,.32)),#b9c1cb;box-shadow:inset 0 10px 0 var(--c),inset 0 -10px 0 var(--c),inset 0 2px 0 3px rgba(0,0,0,.18)}
+.mk.can img{max-width:30px;max-height:32px}
+.mk.btl{width:28px;height:60px;clip-path:polygon(36% 0,64% 0,64% 24%,100% 42%,100% 100%,0 100%,0 42%,36% 24%);background:linear-gradient(90deg,rgba(0,0,0,.35),rgba(255,255,255,.28) 30%,rgba(255,255,255,0) 60%,rgba(0,0,0,.4)),linear-gradient(var(--c) 0 9%,#8a4a14 9%)}
+.mk.btl img{max-width:24px;max-height:22px;margin-top:22px;background:var(--foam);border-radius:3px;padding:1px}
+.logo{flex:none;height:64px;display:grid;place-items:center}
+.logo img{width:auto;height:auto;max-height:60px;max-width:170px;object-fit:contain;display:block;border-radius:8px;filter:drop-shadow(0 2px 4px rgba(19,35,90,.22))}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.chip svg{width:8px;height:13px;fill:currentColor;vertical-align:-2px;margin-right:4px}
+.chip.can{color:var(--can);border-color:color-mix(in srgb,var(--can) 45%,var(--line))}
+.chip.btl{color:var(--btl);border-color:color-mix(in srgb,var(--btl) 45%,var(--line))}
+/* home */
+.hero{background:var(--head);color:var(--head-ink);text-align:center}
+.hero .wrap{padding-block:22px 18px}
+.owlogo{width:min(260px,72%);height:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}
+.hero h1{font-size:40px;margin-top:8px}
+.tag{margin:4px 0 0;font:600 14px var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.shelf{background:var(--backdrop);overflow:hidden;border-bottom:9px solid var(--head)}
+.shelf-track{display:flex;align-items:flex-end;width:max-content;padding-top:14px}
+.shelf-track img{height:96px;width:auto;display:block;margin-right:22px;filter:drop-shadow(0 3px 4px rgba(19,35,90,.3))}
+@keyframes shelf-slide{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:no-preference){.shelf-track{animation:shelf-slide 50s linear infinite}.choice{transition:transform .12s}.choice:active{transform:scale(.98)}}
+.choice{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:center}
+.choice>b,.choice>span{grid-column:1}
+.choice>.art{grid-column:2;grid-row:1 / span 2;display:flex;align-items:center;padding-left:14px}
+.art img{width:auto;height:auto;max-height:80px;max-width:58px;object-fit:contain;margin-left:-10px;filter:drop-shadow(0 3px 5px rgba(19,35,90,.3))}
+.art img:nth-child(1){transform:rotate(-7deg)}
+.art img:nth-child(2){transform:translateY(-5px);z-index:1}
+.art img:nth-child(3){transform:rotate(7deg)}
+#pastewrap{display:grid;gap:12px}
+.wide{width:100%;margin-bottom:10px}
+.foot{margin-top:18px}
+.group{display:grid;gap:6px}
+.glabel{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.checks{display:grid;gap:4px}
+.chk{display:flex;align-items:center;gap:10px;min-height:44px;font-weight:500;cursor:pointer}
+.chk input{width:22px;height:22px;flex:none;accent-color:var(--head)}
+.inline{display:flex;gap:8px}
+.inline .btn{flex:none}
+/* history drop-downs */
+.hx{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;margin-bottom:10px;box-shadow:var(--shadow);overflow:hidden}
+.hx summary,.hx2 summary{display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;list-style:none}
+.hx summary::-webkit-details-marker,.hx2 summary::-webkit-details-marker{display:none}
+.hx>summary{padding:14px 16px;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:.03em;text-transform:uppercase}
+.hx summary span::before{content:"+";display:inline-block;width:18px;font-weight:700}
+.hx details[open]>summary span::before,.hx[open]>summary span::before{content:"–"}
+.hx summary b{font-family:var(--display);font-size:20px;font-variant-numeric:tabular-nums}
+.hx2{border-top:1px solid var(--line)}
+.hx2>summary{padding:12px 16px;font-weight:600}
+.hsub{padding:8px 16px 4px 34px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hr{display:flex;justify-content:space-between;gap:12px;padding:7px 16px 7px 34px;border-top:1px solid var(--line);font-size:15px}
+.hr span{min-width:0}
+.hr b{font-variant-numeric:tabular-nums}
+.toast .undo{margin-left:12px;font:700 14px var(--body);color:var(--accent);background:transparent;border:1.5px solid currentColor;border-radius:6px;padding:4px 12px;cursor:pointer}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cheers{background:var(--done);color:var(--head-ink);border-radius:10px;padding:12px 14px;font-weight:600;margin-top:12px}
+h1,.sheet h2{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.02em;margin:0;text-transform:uppercase}
+#date{font-size:13px;opacity:.75}
+.tabs{display:flex;gap:4px;margin-top:10px}
+.tab{flex:1;font:600 15px var(--body);color:var(--head-ink);background:transparent;border:0;border-bottom:3px solid transparent;padding:10px 4px;cursor:pointer;opacity:.7}
+.tab[aria-selected="true"]{opacity:1;border-bottom-color:var(--accent)}
+.badge{display:inline-block;min-width:22px;padding:1px 7px;border-radius:11px;background:var(--accent);color:var(--accent-ink);font-size:13px;font-variant-numeric:tabular-nums;margin-left:4px}
+main{padding-block:14px 48px}
+.hint{color:var(--muted);font-size:14px;margin:8px 0 4px}
+input[type=search],.field input,.field select{width:100%;font:16px var(--body);padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.actions{display:flex;gap:8px;margin-bottom:10px}
+.actions button,.btn{flex:1;font:600 15px var(--body);padding:12px;border-radius:8px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.btn.primary{background:var(--head);color:var(--accent);border-color:var(--head)}
+.btn.arm{background:var(--danger);color:#fff;border-color:var(--danger)}
+.progress{display:flex;align-items:center;gap:10px;margin:10px 0 2px;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{flex:1;height:14px;border-radius:7px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(var(--beer),var(--beer2));border-right:6px solid var(--foam);box-sizing:border-box}
+.bar i[style*="width: 0"]{border-right:0}
+.cat{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:22px 0 6px}
+.brand{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
+.bh{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.bh b{font-family:var(--display);font-size:19px;font-weight:700;letter-spacing:.02em}
+.bt{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.row{display:flex;align-items:center;gap:8px;padding:5px 8px 5px 4px;min-height:62px}
+.row+.row{border-top:1px solid var(--line)}
+.ck{flex:none;width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;cursor:pointer;padding:0}
+.box{width:24px;height:24px;border:2px solid var(--muted);border-radius:6px;display:grid;place-items:center;font-size:15px;line-height:1;color:#fff}
+.row.checked .box,.pi.done .box{background:var(--done);border-color:var(--done)}
+.row.checked .lbl{color:var(--muted)}
+.nm{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.lbl{font-weight:500}
+.note{flex-basis:100%;font-size:13px;color:var(--muted)}
+.field textarea{width:100%;min-height:130px;resize:vertical;font:15px var(--body);padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.chip{font-size:12px;font-weight:600;padding:2px 7px;border-radius:4px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.row.has{background:color-mix(in srgb,var(--hot) 28%,transparent)}
+.row.has .lbl{font-weight:600;color:var(--ink)}
+.step{display:flex;align-items:center;flex:none}
+.step button{width:42px;height:44px;border:1px solid var(--line);background:rgba(19,35,90,.09);color:var(--ink);font:600 22px var(--body);cursor:pointer;line-height:1}
+.step button:first-child{border-radius:8px 0 0 8px}
+.step button:last-child{border-radius:0 8px 8px 0}
+.step input{width:44px;height:44px;border:1px solid var(--line);border-inline:0;text-align:center;font:600 18px var(--body);background:var(--surface);color:var(--ink);font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.step input::-webkit-outer-spin-button,.step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+#pullsummary{color:var(--muted);font-size:14px;margin:0}
+.sec{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.04em;text-transform:uppercase;margin:20px 0 6px;display:flex;justify-content:space-between;align-items:baseline}
+.sec span{font-family:var(--body);font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0;text-transform:none}
+.plist{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+.pi{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px;border:0;background:transparent;color:var(--ink);font:500 16px var(--body);cursor:pointer;min-height:52px}
+.pi+.pi{border-top:1px solid var(--line)}
+.q{font-family:var(--display);font-weight:700;font-size:24px;font-variant-numeric:tabular-nums;min-width:36px;text-align:right}
+.pi.done{color:var(--muted)}
+.pi.done .lbl{text-decoration:line-through}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:24px 16px;text-align:center;color:var(--muted);margin-top:16px}
+#copyfallback{width:100%;height:220px;margin-top:12px;font:14px ui-monospace,monospace;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
+/* add sheet */
+.sheet{position:fixed;inset:0;z-index:30;background:var(--backdrop);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet-h{background:var(--head);color:var(--head-ink);padding-top:env(safe-area-inset-top,0px)}
+.sheet-h .wrap{display:flex;justify-content:space-between;align-items:center;padding-block:12px}
+.sheet-h button{font:600 15px var(--body);background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:9px 16px;cursor:pointer}
+.sheet-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sheet-body .wrap{padding-block:12px 40px}
+.res{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;background:transparent;color:var(--ink);font:500 16px var(--body);cursor:pointer;min-height:52px}
+.res+.res{border-top:1px solid var(--line)}
+.pill{flex:none;font-size:13px;font-weight:600;padding:5px 10px;border-radius:14px;border:1px solid var(--accent);color:var(--ink)}
+.res.on .pill{background:var(--done);border-color:var(--done);color:#fff}
+.newbtn{width:100%;margin-top:10px}
+.form{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px;display:grid;gap:12px;margin-top:12px}
+.form h3{margin:0;font-family:var(--display);font-size:20px;text-transform:uppercase;letter-spacing:.03em}
+.field{display:grid;gap:5px}
+.field label{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.err{color:var(--danger);font-size:14px;margin:0}
+.formbtns{display:flex;gap:8px}
+@media (prefers-reduced-motion:no-preference){.row,.pi,.res{transition:background .15s}.bar i{transition:width .2s}}
+</style>
+</head>
+<body>
+
+<div id="screen-auth" hidden>
+  <header class="hero"><div class="wrap"><img class="owlogo" alt="O&amp;W, Inc."><h1>Beer Stocking</h1><p class="tag">Check it · Count it · Pull it</p></div></header>
+  <main class="wrap">
+    <form id="authform" class="form">
+      <h3>Sign in</h3>
+      <div class="field"><label for="au">Username</label><input id="au" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+      <div class="field"><label for="ap">Password</label><input id="ap" type="password" autocomplete="current-password"></div>
+      <p id="aerr" class="err" hidden></p>
+      <div class="formbtns"><button type="submit" class="btn primary">Sign in</button><button type="button" id="signup" class="btn">Create account</button></div>
+      <p class="hint">New here? Type the username and password you want, then tap Create account. Accounts are saved on this phone only, so pick a simple password you don't use anywhere else.</p>
+    </form>
+  </main>
+</div>
+
+<div id="screen-profile" hidden>
+  <header class="top"><div class="wrap solo"><div class="titlerow"><h1>Your profile</h1></div></div></header>
+  <main class="wrap">
+    <form id="profform" class="form">
+      <div class="two">
+        <div class="field"><label for="pf">First name</label><input id="pf" autocomplete="given-name"></div>
+        <div class="field"><label for="pl">Last name</label><input id="pl" autocomplete="family-name"></div>
+      </div>
+      <div class="group"><span class="glabel">Your main stores</span><div id="pstores" class="checks"></div></div>
+      <div class="field"><label for="pns">Add a store</label><div class="inline"><input id="pns" autocomplete="off" placeholder="e.g. Kroger Howell"><button type="button" id="paddstore" class="btn">Add</button></div></div>
+      <p id="perr" class="err" hidden></p>
+      <button type="submit" class="btn primary">Save profile</button>
+    </form>
+  </main>
+</div>
+
+<div id="screen-home" hidden>
+  <header class="hero">
+    <div class="wrap"><img class="owlogo" alt="O&amp;W, Inc."><h1 id="welcome">Welcome</h1><p class="tag">Check it · Count it · Pull it</p></div>
+    <div class="shelf" id="shelf" aria-hidden="true"></div>
+  </header>
+  <main class="wrap">
+    <p class="hint">What are you working on today?</p>
+    <div class="choices">
+      <button id="go-back" class="choice"><b>Backstock</b><span id="home-back-sub">Check the floor and pull from back stock</span><span class="art" id="art-back" aria-hidden="true"></span></button>
+      <button id="go-truck" class="choice"><b>Truck Day</b><span id="home-truck-sub">Pick a store and work its truck list</span><span class="art" id="art-truck" aria-hidden="true"></span></button>
+    </div>
+    <div id="history"></div>
+    <div class="actions foot"><button id="editprofile" class="btn">Edit profile</button><button id="signout" class="btn">Sign out</button>
+    </div>
+  </main>
+</div>
+
+<div id="screen-stores" hidden>
+  <header class="top"><div class="wrap solo"><div class="titlerow"><button id="storesback" class="backbtn">‹ Home</button><h1 id="storestitle">Truck Day</h1></div></div></header>
+  <main class="wrap">
+    <p class="hint" id="storeshint">Pick a store. Each store keeps its own list and counts.</p>
+    <div id="storelist" class="choices"></div>
+    <form id="storeform" class="form">
+      <h3>Add a store</h3>
+      <div class="field"><label for="sn">Store name</label><input id="sn" autocomplete="off" placeholder="e.g. Kroger Howell"></div>
+      <div id="pastewrap"><div class="field"><label for="st">Paste the truck list (optional)</label><textarea id="st" autocomplete="off" placeholder="Paste the list the same way you text it, e.g.&#10;24s&#10;light: 7&#10;blue: 3&#10;miller: 11c"></textarea></div>
+      <p class="hint">Paste the note and the store starts with those items and counts. Leave it blank to start from the standard truck list.</p></div>
+      <p id="serr" class="err" hidden></p>
+      <button type="submit" class="btn primary">Add store</button>
+    </form>
+  </main>
+</div>
+
+<div id="screen-list" hidden>
+<header class="top">
+  <div class="wrap">
+    <div class="titlerow"><button id="listback" class="backbtn">‹ Back</button><h1 id="listtitle">Backstock</h1><span id="date"></span></div>
+    <div class="tabs" role="tablist">
+      <button id="tab-fill" class="tab" role="tab" aria-selected="true">Fill in</button>
+      <button id="tab-pull" class="tab" role="tab" aria-selected="false">Pull list <span id="badge" class="badge">0</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="view-fill">
+    <div class="actions"><button id="openadd" class="btn primary">+ Add item</button><button id="clearlist" class="btn">Clear list</button></div>
+    <input id="search" type="search" placeholder="Find on list…" autocomplete="off">
+    <div class="progress"><span id="prog">0 of 0 checked</span><div class="bar"><i id="progbar"></i></div></div>
+    <p class="hint" id="fillhint"></p>
+    <div id="fill"></div>
+  </section>
+  <section id="view-pull" hidden>
+    <div class="actions"><button id="copy" class="btn">Copy list</button><button id="clearcounts" class="btn">Clear counts</button></div>
+    <button id="finish" class="btn primary wide">Finish &amp; save to history</button>
+    <p id="pullsummary"></p>
+    <div id="pull"></div>
+    <textarea id="copyfallback" hidden readonly></textarea>
+  </section>
+</main>
+</div>
+
+<div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="sheet-h"><div class="wrap"><h2 id="sheet-title">Add to list</h2><button id="closeadd">Done</button></div></div>
+  <div class="sheet-body"><div class="wrap">
+    <input id="addsearch" type="search" placeholder="Search brand, flavor or size" autocomplete="off">
+    <button id="opennew" class="btn newbtn">+ Add new item</button>
+    <button id="addall" class="btn newbtn">Add every saved item</button>
+    <form id="newform" class="form" hidden>
+      <h3>New item</h3>
+      <div class="field"><label for="nb">Brand</label><input id="nb" list="brandlist" autocomplete="off" placeholder="e.g. White Claw"></div>
+      <div class="field"><label for="nf">Flavor / style</label><input id="nf" autocomplete="off" placeholder="e.g. Watermelon (leave blank if none)"></div>
+      <div class="field"><label for="ns">Size</label><select id="ns"></select></div>
+      <div class="field" id="nsoWrap" hidden><label for="nso">Other size</label><input id="nso" autocomplete="off" placeholder="e.g. 16 can"></div>
+      <p id="nerr" class="err" hidden></p>
+      <div class="formbtns"><button type="button" id="cancelnew" class="btn">Cancel</button><button type="submit" class="btn primary">Save &amp; add</button></div>
+    </form>
+    <datalist id="brandlist"></datalist>
+    <p id="addhint" class="hint"></p>
+    <div id="results" class="plist" hidden></div>
+  </div></div>
+</div>
+<div id="toast" class="toast" hidden></div>
+<script src="beer-img.js"></script>
+
+<script>
+// Every item from past order lists and the back-stock sheet. Format: Brand = flavor @ size, ...
+const CATALOG_TXT = `
+Domestics
+Miller = @ 24, @ 15, Pints @ 15 pints, Pints @ 9 pints, @ 20 btl, @ 12 btl, @ 6 can, @ 6 btl, Extra Light @ 24
+Coors = @ 24, @ 15, Pints @ 15 pints, Pints @ 9 pints, @ 20 btl, @ 12 btl, @ 8 can, @ 6 can, @ 6 btl
+Labatt = Blue @ 24, Blue @ 15, Blue @ 12 btl, Blue @ 6 can, Blue @ 6 btl, Light @ 24, Light @ 15, Light @ 12 btl, Light @ 6 can, Light @ 6 btl
+Molson = @ 24, @ 15, @ 12 btl, Gold @ 12 btl, Ice @ 12 btl
+Banquet = @ 24, @ 15, Pints @ 15 pints, Pints @ 9 pints, @ 12 btl
+Keystone Light = @ 15, Apple @ 15
+Garage Beer = @ 15, Lime @ 15
+High Life = @ 30, @ 12 btl, @ 12 can, Light @ 12 btl
+Hamm's = @ 30
+PBR = @ 30, @ 12 can, Light @ 30, Light @ 12 can, Light @ 6 can
+Milwaukee's Best = @ 30, Light @ 30
+Yuengling = Traditional @ 24, Traditional @ 24 btl, Traditional @ 12 btl, Traditional @ 12 can, Traditional @ 6 btl, Light @ 24, Light @ 12 btl, Light @ 12 can, Flight @ 24, Flight @ 12 btl, Flight @ 12 can, Flight @ 6 btl, Black & Tan @ 12 can, Black & Tan @ 6 btl
+Imports
+Corona = Extra @ 24 btl, Extra @ 18 btl, Extra @ 12 btl, Extra @ 12 can, Extra @ 6 btl, Light @ 18 can, Light @ 12 btl, Light @ 12 can, Light @ 6 btl, Premier @ 24 can, Premier @ 18 btl, Premier @ 12 btl, Premier @ 12 can, Premier @ 6 btl, Sunbrew @ 12 btl, Sunbrew @ 12 can, Coronita @ 6 btl
+Modelo = @ 24, @ 24 btl, @ 24 can, @ 18 btl, @ 18 can, @ 12 btl, @ 12 can, @ 6 btl, @ 6 can, Negra @ 12 btl, Negra @ 6 btl, Oro @ 24 can, Oro @ 12 btl, Oro @ 12 can
+Heineken = @ 18 btl, @ 12 btl, @ 12 can, @ 6 btl, @ 4 can, Light @ 12 btl
+Dos Equis = @ 12 btl, @ 6 btl
+Pacifico = @ 12 btl
+Peroni = @ 12 btl, @ 6 btl
+Killian's = @ 12 btl
+Guinness = Extra Stout @ 12 btl, Extra Stout @ 6 btl, Draught @ 8 can, Draught @ 4 can, Draught @ 6 btl
+Craft / Specialty
+Sam Adams = Boston Lager @ 12 btl, Boston Lager @ 6 btl, Oktoberfest @ 12 btl, Oktoberfest @ 6 btl, Winter Ale @ 12 btl, Winter Ale @ 6 btl, Winter White Ale @ 6 btl, Winter Break @ 12 can, Cherry Wheat @ 12 can, Cherry Wheat @ 6 btl, Cherry Bomb @ 6 btl, Spring Favorites @ 12 can
+Blue Moon = White @ 12 btl, White @ 12 can, White @ 6 btl, Light @ 12 can
+Leinenkugel's = Summer Shandy @ 12 btl, Summer Shandy @ 12 can, Summer Shandy @ 6 btl, Summer Shandy @ 6 can, Tropical Hazy @ 12 can, Tropical Hazy @ 6 can, White Mocha Stout @ 12 can
+Voodoo Ranger = Hoppy Pack @ 12 can, Juicy Haze @ 6 can, Juice Force @ 6 can, Imperial IPA @ 6 can, Trippel @ 6 btl, Sweet Ride @ 6 can, Flat Tire @ 12 btl, Flat Tire @ 6 can
+Sierra Nevada = Pale Ale @ 12 can, Hazy IPA @ 12 can, Hazy IPA @ 6 can
+Cheboygan = Blood Orange @ 12 can, Blood Orange @ 6 can, Purple @ 6 can
+Dirty Blonde = @ 12 can, @ 6 can
+Seltzers / Hard Teas / FMBs
+White Claw = Variety @ 24, VP1 @ 12 can, VP2 @ 12 can, VP3 @ 12 can, Surge VP1 @ 12 can, Surge VP2 @ 12 can, Black Cherry @ 12 can, Black Cherry @ 6 can, Mango @ 6 can, Pineapple @ 6 can, Peach @ 6 can, Green Apple @ 6 can, Ruby Grapefruit @ 6 can, Blackberry @ 6 can, Grape @ 6 can, Clawtail @ 6 can
+Truly = Day Dream @ 24, Paradise @ 12 can, Berry @ 12 can, Lemonade @ 12 can, Punch @ 12 can, Strawberry Lemonade @ 12 can, Sunset Mix @ 12 can, Star Squad @ 12 can, Unruly @ 12 can, Unruly Lemonade @ 12 can
+Twisted Tea = Original @ 24 can, Original @ 18 can, Original @ 12 can, Light @ 12 can, Party Pack @ 12 can, Party Pack Light @ 12 can, Half & Half @ 12 can, Extreme @ 12 can
+Sun Cruiser = Iced Tea + Vodka @ 12 can, Lemonade + Vodka @ 12 can, Sampler @ 12 can
+Surfside = Iced Tea @ 12 can, Lemonade @ 12 can, Half & Half @ 12 can, Green Tea @ 12 can, Lemonade @ 4 can
+Super Lyte = @ 8 can
+Vizzy = Vibrant Tropical @ 12 can, Cream Pop @ 12 can, Refreshingly Berry @ 12 can
+Lone River = @ 12 can, @ 6 can
+Topo Chico = Seltzer @ 12 can, Margarita @ 12 can, Seltzer @ 6 can
+Simply = Lemonade @ 12 can, Bold @ 12 can
+Smirnoff Ice = Red White & Berry @ 12 can, Red White & Berry @ 6 btl, Icy Island @ 12 can, Zero Sugar Variety @ 12 can, Zero Sugar RWB @ 12 can, Original @ 6 btl, Screwdriver @ 6 btl, Cream Pop @ 6 btl, Sunny Days @ 12 can, Neon @ 12 can
+Mike's = Original @ 12 can, Original @ 12 btl, Original @ 6 can, Black Cherry @ 6 can, Dirty @ 12 can, New Pink @ 12 can, Extra Hard @ 12 can, Hard Freeze @ 12 can
+Cayman Jack = Margarita @ 12 btl, Green 0 Sugar @ 12 can, Blue @ 12 can, Margarita @ 6 btl
+Seagram's = Jamaican Me Happy @ 4 btl, Variety @ 12 btl, @ 12 can
+Captain Morgan = @ 12 can
+Angry Orchard = @ 12 can, @ 12 btl, @ 6 btl
+Jack Daniel's = Party Pack @ 12 can
+Not Your Father's = Root Beer @ 6 btl
+Non-Alcoholic
+Athletic = Run Wild @ 12 can, Run Wild @ 6 can, Upside Dawn @ 12 can, Upside Dawn @ 6 can, Free Wave @ 12 can, Free Wave @ 6 can, Lite @ 12 can, Lite @ 6 can, Atletica @ 6 can, Lime @ 6 can
+Heineken 0.0 = @ 12 can, @ 12 btl, @ 6 btl
+Blue Moon NA = @ 12 can, @ 6 can
+Labatt Blue NA = @ 12 can, @ 6 can
+Corona NA = @ 12 btl, @ 12 can
+Guinness 0 = @ 4 can
+Sierra Nevada NA = @ 6 can
+Modelo Chelada = @ 6 can
+`;
+// The truck day note, line for line. Every store's truck list starts from this.
+const TRUCK_TXT = `
+Labatt = Light @ 24, Blue @ 24, Light @ 15, Blue @ 15, Blue @ 6 can, Blue @ 6 btl, Light @ 6 can, Light @ 6 btl, Light @ 12 btl, Blue @ 12 btl
+Miller = @ 24, Extra Light @ 24, @ 15, Pints @ 15 pints, Pints @ 9 pints, @ 6 can, @ 6 btl, @ 12 btl, @ 20 btl
+Coors = @ 24, @ 15, Pints @ 15 pints, Pints @ 9 pints, @ 6 can, @ 6 btl, @ 12 btl, @ 20 btl
+Molson = @ 24, @ 15, Gold @ 12 btl, @ 12 btl, Ice @ 12 btl
+Banquet = @ 24, @ 15, Pints @ 15 pints, @ 12 btl
+Yuengling = Traditional @ 24, Traditional @ 24 btl, Light @ 24, Flight @ 24, Traditional @ 6 btl, Black & Tan @ 6 btl, Flight @ 6 btl, Traditional @ 12 btl, Light @ 12 btl, Flight @ 12 btl, Black & Tan @ 12 can, Traditional @ 12 can, Light @ 12 can, Flight @ 12 can
+Garage Beer = Lime @ 15, @ 15
+Keystone Light = @ 15, Apple @ 15
+PBR = Light @ 6 can, @ 12 can, Light @ 12 can, @ 30, Light @ 30
+High Life = @ 12 btl, Light @ 12 btl, @ 12 can, @ 30
+Hamm's = @ 30
+Corona = Light @ 12 btl, Light @ 18 can, Extra @ 12 btl, Extra @ 18 btl, Sunbrew @ 12 btl, Sunbrew @ 12 can, Premier @ 12 btl, Premier @ 18 btl, Extra @ 24 btl, Premier @ 24 can, Premier @ 12 can, Light @ 12 can, Extra @ 12 can, Extra @ 6 btl, Light @ 6 btl, Premier @ 6 btl, Coronita @ 6 btl
+Modelo = @ 12 btl, @ 18 btl, @ 24 btl, @ 24 can, @ 6 btl, Negra @ 12 btl, Negra @ 6 btl, @ 12 can, @ 18 can, @ 6 can, Oro @ 12 btl, Oro @ 12 can, Oro @ 24 can, Chelada @ cans
+Heineken = @ 18 btl, @ 12 btl, @ 12 can, @ 6 btl, @ 4 can, Light @ 12 btl
+Killian's = @ 12 btl
+Pacifico = @ 12 btl
+Dos Equis = @ 12 btl, @ 6 btl
+Peroni = @ 6 btl
+Guinness = Draught @ 8 can, Extra Stout @ 6 btl, Draught @ 6 btl, Draught @ 4 can
+Blue Moon NA = @ 6 can, @ 12 can
+Sierra Nevada NA = @ 6 can
+Athletic = Run Wild @ 6 can, Run Wild @ 12 can, Upside Dawn @ 6 can, Upside Dawn @ 12 can, Free Wave @ 6 can, Free Wave @ 12 can, Lite @ 6 can, Lite @ 12 can, Atletica @ 6 can, Lime @ 6 can
+Labatt Blue NA = @ 12 can, @ 6 can
+Guinness 0 = @ 4 can
+Heineken 0.0 = @ 12 btl, @ 6 btl, @ 12 can
+Corona NA = @ 12 can, @ 12 btl
+Modelo Chelada = @ 6 can
+Sam Adams = Boston Lager @ 12 btl, Winter Ale @ 12 btl, Boston Lager @ 6 btl, Cherry Bomb @ 6 btl, Cherry Wheat @ 6 btl, Winter Ale @ 6 btl, Cherry Wheat @ 12 can, Winter Break @ 12 can
+Blue Moon = Light @ 12 can, White @ 6 btl, White @ 12 can, White @ 12 btl
+Voodoo Ranger = Imperial IPA @ cans, Imperial IPA @ 6 can, Trippel @ 6 btl, Flat Tire @ 12 btl, Flat Tire @ 6 can, Hoppy Pack @ 12 can, Sweet Ride @ 6 can
+Sierra Nevada = Pale Ale @ 12 can, Hazy IPA @ 12 can
+Leinenkugel's = Summer Shandy @ 12 btl, Summer Shandy @ 12 can, Summer Shandy @ 6 btl, Summer Shandy @ 6 can, Tropical Hazy @ 12 can, Tropical Hazy @ 6 can
+Cheboygan = Blood Orange @ 6 can, Purple @ 6 can, Blood Orange @ 12 can
+Dirty Blonde = @ 6 can, @ 12 can
+White Claw = Variety @ 24, VP1 @ 12 can, VP2 @ 12 can, VP3 @ 12 can, Black Cherry @ 12 can, Black Cherry @ 6 can, Mango @ 6 can, Pineapple @ 6 can, Peach @ 6 can, Green Apple @ 6 can, Ruby Grapefruit @ 6 can, Blackberry @ 6 can, Grape @ 6 can, Clawtail @ 6 can, Surge VP1 @ 12 can, Surge VP2 @ 12 can
+Surfside = Iced Tea @ 4 can, Lemonade @ 4 can, Lemonade @ 12 can, Half & Half @ 4 can, Green Tea @ 4 can
+Sun Cruiser = Iced Tea + Vodka @ 4 can, Lemonade + Vodka @ 4 can, Sampler @ 12 can
+Super Lyte = @ 8 can
+Twisted Tea = Original @ 12 can, Party Pack @ 12 can, Party Pack Light @ 12 can, Light @ 12 can, Half & Half @ 12 can, Original @ 18 can, Original @ 24 can, Extreme @ 12 can
+Truly = Berry @ 12 can, Lemonade @ 12 can, Sunset Mix @ 12 can, Unruly @ 12 can, Paradise @ 12 can, Unruly Lemonade @ 12 can, Punch @ 12 can, Strawberry Lemonade @ 12 can
+Vizzy = Vibrant Tropical @ 12 can, Cream Pop @ 12 can, Refreshingly Berry @ 12 can
+Lone River = @ 12 can, @ 6 can
+Topo Chico = Seltzer @ 12 can, Margarita @ 12 can, Seltzer @ 6 can
+Simply = Lemonade @ 12 can, Bold @ 12 can
+Smirnoff Ice = Zero Sugar Variety @ 12 can, Zero Sugar RWB @ 12 can, Red White & Berry @ 12 can, Original @ 6 btl, Screwdriver @ 6 btl, Cream Pop @ 6 btl, Red White & Berry @ 6 btl, Sunny Days @ 12 can, Neon @ 12 can, Icy Island @ 12 can
+Captain Morgan = @ 12 can
+Mike's = Original @ 6 can, Black Cherry @ 6 can, Hard Freeze @ 12 can, Original @ 12 btl
+Cayman Jack = Margarita @ 6 btl, Margarita @ 12 btl, Blue @ 12 can, Green 0 Sugar @ 12 can
+Seagram's = Variety @ 12 btl, Pink Box @ 12 btl, @ 12 can
+Angry Orchard = @ 6 btl, @ 12 btl
+`;
+// This week's back-stock sheet, in the order written: [section, brand, flavor, size]
+const SHEET = [
+ ["c12","Truly","Paradise","12 can"],["c12","Sun Cruiser","Iced Tea + Vodka","12 can"],["c12","White Claw","Black Cherry","12 can"],
+ ["c12","Mike's","Dirty","12 can"],["c12","Mike's","New Pink","12 can"],["c12","Mike's","Original","12 can"],
+ ["c12","Topo Chico","Margarita","12 can"],["c12","Vizzy","Vibrant Tropical","12 can"],["c12","Mike's","Extra Hard","12 can"],
+ ["c12","Angry Orchard","","12 can"],["c12","White Claw","Surge VP2","12 can"],["c12","Jack Daniel's","Party Pack","12 can"],
+ ["c12","Smirnoff Ice","Red White & Berry","12 can"],["c12","Twisted Tea","Party Pack Light","12 can"],["c12","Sun Cruiser","Lemonade + Vodka","12 can"],
+ ["c12","Sun Cruiser","Sampler","12 can"],["c12","Corona","Light","12 can"],["c12","Cayman Jack","Green 0 Sugar","12 can"],
+ ["c12","Surfside","Lemonade","12 can"],["c12","Smirnoff Ice","Icy Island","12 can"],["c12","Twisted Tea","Party Pack","12 can"],
+ ["c12","Yuengling","Black & Tan","12 can"],["c12","Yuengling","Flight","12 can"],["c12","Cheboygan","Blood Orange","12 can"],
+ ["c12","Cayman Jack","Blue","12 can"],["c12","Yuengling","Light","12 can"],["c12","Leinenkugel's","White Mocha Stout","12 can"],
+ ["c12","Surfside","Iced Tea","12 can"],["c12","Heineken 0.0","","12 can"],
+ ["b12","Sam Adams","Winter Ale","12 btl"],["b12","Banquet","","12 btl"],["b12","Leinenkugel's","Summer Shandy","12 btl"],
+ ["b12","Guinness","Extra Stout","12 btl"],["b12","Coors","","20 btl"],["b12","Killian's","","12 btl"],
+ ["mix","Milwaukee's Best","Light","30"],["mix","Hamm's","","30"],["mix","Milwaukee's Best","","30"],["mix","PBR","","30"],
+ ["mix","Heineken","","18"],["mix","Corona","Extra","18"],["mix","Modelo","","18 btl"],["mix","Miller","Pints","15 pints"],["mix","Banquet","Pints","9 pints"],
+ ["s24","Corona","Extra","24 btl"],["s24","White Claw","Variety","24"],["s24","Modelo","","24"],["s24","Miller","","24"],
+ ["s24","Yuengling","Traditional","24"],["s24","Miller","Extra Light","24"],["s24","Labatt","Blue","24"],["s24","Molson","","24"],
+ ["s24","Yuengling","Flight","24"],["s24","Coors","","24"],["s24","Labatt","Light","24"],["s24","Banquet","","24"],["s24","Truly","Day Dream","24"]
+];
+const SIZES=["30","24","24 btl","24 can","20 btl","18 btl","18 can","15","15 pints","9 pints","12 btl","12 can","8 can","6 btl","6 can","4 btl","4 can"];
+const SECS=[["s24","24s"],["mix","30 / 18 / 15 / 9"],["b12","12 Bottles"],["c12","12 Cans"],["s6","8 / 6 / 4 Packs"],["oth","Other sizes"]];
+const SECW={s24:0,mix:1,b12:2,c12:3,s6:4,oth:5};
+const ALIAS={"white claw":"wc claw","twisted tea":"tt","sam adams":"sa samuel","yuengling":"yung yuengs","milwaukee's best":"mil best beast","smirnoff ice":"smir smirnoff","leinenkugel's":"leinie leinies leinenkrugal","labatt":"blue","pbr":"pabst","cayman jack":"caymen","sun cruiser":"suncruiser","heineken 0.0":"na","athletic":"na"};
+function secOf(size){
+  const s=size.toLowerCase();
+  if(/^24\b/.test(s)) return "s24";
+  if(/^(30|18|15|9)\b/.test(s)) return "mix";
+  if(/^(12|20)\b/.test(s)) return /btl|bottle/.test(s)?"b12":"c12";
+  if(/^(8|6|4)\b/.test(s)) return "s6";
+  return "oth";
+}
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const key=(b,f,s)=>slug(b+"|"+f+"|"+s);
+
+const CATS=[], BRAND_CAT={}, catalog=[], byId={};
+function addCat(b,f,s,custom){const id=key(b,f,s); if(byId[id]) return byId[id]; const it={id,brand:b,flavor:f,size:s,sec:secOf(s),custom:!!custom,ord:catalog.length}; catalog.push(it); byId[id]=it; return it;}
+{let cur=null;
+ for(const line of CATALOG_TXT.split("\n")){const t=line.trim(); if(!t) continue;
+  if(!t.includes(" = ")){cur=[t,[]];CATS.push(cur);continue;}
+  const [b,rest]=t.split(" = "); cur[1].push(b); BRAND_CAT[b]=cur[0];
+  rest.split(",").forEach(p=>{const [f,s]=p.split("@");addCat(b,f.trim(),s.trim());});
+ }}
+CATS.push(["New Items",[]]);
+const brandCanon=b=>{const l=b.trim().toLowerCase(); return Object.keys(BRAND_CAT).find(k=>k.toLowerCase()===l)||b.trim();};
+const ensureBrand=b=>{if(!BRAND_CAT[b]){BRAND_CAT[b]="New Items";CATS[CATS.length-1][1].push(b);}};
+
+const SIZEFIX={"18":"18 btl"};
+const DEFAULT=[], OLDMAP={};
+SHEET.forEach(r=>{const it=addCat(r[1],r[2],SIZEFIX[r[3]]||r[3]); DEFAULT.push(it.id); OLDMAP[slug(r[0]+"-"+r[1]+"-"+r[2]+"-"+r[3])]=it.id;});
+
+const TRUCK=[];
+for(const line of TRUCK_TXT.split("\n")){const t=line.trim(); if(!t) continue;
+  const [b,rest]=t.split(" = "); ensureBrand(b);
+  rest.split(",").forEach(p=>{const [f,s]=p.split("@"); const it=addCat(b,f.trim(),s.trim()); if(!TRUCK.includes(it.id)) TRUCK.push(it.id);});
+}
+/* ---------- Reading a pasted truck day note ---------- */
+// How the note's lines map to items. "section > Brand : label=Flavor|size; ..." (three parts = Brand|Flavor|size). "*" lines match in any section.
+const NOTE_MAP = `
+24s > : yuengling 24 btl=Yuengling|Traditional|24 btl
+6 packs > : miller 6 pack cans=Miller||6 can; miller 6 pack btl=Miller||6 btl; coors 6 pack cans=Coors||6 can; coors 6 pack btl=Coors||6 btl; blue labatt 6 pack cans=Labatt|Blue|6 can; blue labatt 6 pack btl=Labatt|Blue|6 btl; light labatt 6 pack cans=Labatt|Light|6 can; light labatt 6 pack btl=Labatt|Light|6 btl; yuengling btl=Yuengling|Traditional|6 btl; yuengling b t btl=Yuengling|Black & Tan|6 btl; yuengling flight btl=Yuengling|Flight|6 btl; pbr light=PBR|Light|6 can
+corona > Corona : light 12 bottle=Light|12 btl; light 18 cans=Light|18 can; extra 12 bottle=Extra|12 btl; extra 18 bottle=Extra|18 btl; sunbrew 12 bottle=Sunbrew|12 btl; sunbrew 12 can=Sunbrew|12 can; premier 12 bottle=Premier|12 btl; premier 18 bottle=Premier|18 btl; extra 24 bottle=Extra|24 btl; corona premier 24 can=Premier|24 can; premier cans=Premier|12 can; light cans=Light|12 can; extra cans=Extra|12 can; extra 6 pack=Extra|6 btl; light 6 pack=Light|6 btl; premier 6 pack=Premier|6 btl; coronita 6 pack=Coronita|6 btl
+modelo > Modelo : 12 bottle=|12 btl; 18 bottle=|18 btl; 24 bottle=|24 btl; 24 cans=|24 can; 6 pack bottle=|6 btl; negra 12 pack=Negra|12 btl; negra 6 pack=Negra|6 btl; 12 cans=|12 can; 18 cans=|18 can; 6 pack cans=|6 can; oro 12 btl=Oro|12 btl; oro 12 cans=Oro|12 can; oro 24 cans=Oro|24 can; chelada cans=Chelada|cans
+heineken > Heineken : 18 bottle=|18 btl; 12 pack bottle=|12 btl; 12 pack cans=|12 can; 6 pack=|6 btl; 4 pack=|4 can; 12 btl light=Light|12 btl
+* > : killians=Killian's||12 btl; pacifico=Pacifico||12 btl; dos equis btl=Dos Equis||12 btl; dos equis 6 pack=Dos Equis||6 btl; peroni 6 pack=Peroni||6 btl; peroni 12 btl=Peroni||12 btl; sierra nevada pale ale 12 cans=Sierra Nevada|Pale Ale|12 can; sierra nevada hazy ipa 12 cans=Sierra Nevada|Hazy IPA|12 can; sierra nevada hazy ipa 6 cans=Sierra Nevada|Hazy IPA|6 can; super lyte=Super Lyte||8 can; lone river 12 cans=Lone River||12 can; lone river 6 cans=Lone River||6 can; captain morgan 12 pack=Captain Morgan||12 can; not your fathers root beer 6 pack=Not Your Father's|Root Beer|6 btl; angry orchard 6 pack=Angry Orchard||6 btl; 8 cans coors=Coors||8 can
+guinness > Guinness : 8 cans=Draught|8 can; 6 pack extra stout=Extra Stout|6 btl; 6 pack draught stout=Draught|6 btl; 4 cans=Draught|4 can; 12 btl=Extra Stout|12 btl
+na > : blue moon 6 pack cans=Blue Moon NA||6 can; blue moon 12 cans=Blue Moon NA||12 can; sierra nevada=Sierra Nevada NA||6 can; athletic run wild 6 pack=Athletic|Run Wild|6 can; athletic run wild 12 cans=Athletic|Run Wild|12 can; athletic upside dawn 6 pack=Athletic|Upside Dawn|6 can; athletic upside dawn 12 cans=Athletic|Upside Dawn|12 can; athletic free wave 6 pack=Athletic|Free Wave|6 can; athletic free wave 12 cans=Athletic|Free Wave|12 can; athletic lite 6 pack=Athletic|Lite|6 can; athletic lite 12 cans=Athletic|Lite|12 can; athletic atletica 6 pack=Athletic|Atletica|6 can; athletic lime 6 pack=Athletic|Lime|6 can; blue labatt 12 cans=Labatt Blue NA||12 can; blue labatt 6 pack=Labatt Blue NA||6 can; guiness=Guinness 0||4 can; guinness=Guinness 0||4 can; heineken 12 btl=Heineken 0.0||12 btl; heineken 6 pack btl=Heineken 0.0||6 btl; heineken 12 cans=Heineken 0.0||12 can; corona 12 cans=Corona NA||12 can; corona 12 btl=Corona NA||12 btl; modelo chelada 6 cans=Modelo Chelada||6 can
+sam adams > Sam Adams : boston lager 12 btl=Boston Lager|12 btl; oktoberfest 12 btl=Oktoberfest|12 btl; winter ale 12 btl=Winter Ale|12 btl; winter white ale 12 btl=Winter White Ale|12 btl; boston lager 6 pack=Boston Lager|6 btl; cherry bomb 6 pack=Cherry Bomb|6 btl; cherry wheat 6 pack=Cherry Wheat|6 btl; oktoberfest 6 pack=Oktoberfest|6 btl; winter ale 6 pack=Winter Ale|6 btl; winter white ale 6 pack=Winter White Ale|6 btl; cherry wheat 12 cans=Cherry Wheat|12 can; spring favorites 12 cans=Spring Favorites|12 can; winter 12 cans=Winter Break|12 can; winter break 12 cans=Winter Break|12 can
+blue moon > Blue Moon : light 12 cans=Light|12 can; 6 pack btl=White|6 btl; white 12 cans=White|12 can; white 12 btl=White|12 btl
+voodoo ranger > Voodoo Ranger : imperial ipa cans=Imperial IPA|cans; imperial ipa 6 pack=Imperial IPA|6 can; trippel 6 pack=Trippel|6 btl; flat tire 12 btl=Flat Tire|12 btl; flat tire 6 can=Flat Tire|6 can; hoppy pack=Hoppy Pack|12 can; sweet ride=Sweet Ride|6 can; juicy haze=Juicy Haze|6 can; juice force=Juice Force|6 can
+leinenkugels > Leinenkugel's : summer shandy 12 btl=Summer Shandy|12 btl; summer shandy 12 cans=Summer Shandy|12 can; summer shandy 6 pack=Summer Shandy|6 btl; summer shandy 6 pack cans=Summer Shandy|6 can; tropical hazy 12 cans=Tropical Hazy|12 can; tropical hazy 6 cans=Tropical Hazy|6 can
+cheboygan > Cheboygan : orange 6 pack=Blood Orange|6 can; purple 6 pack=Purple|6 can; orange 12 pack=Blood Orange|12 can
+dirty blonde > Dirty Blonde : 6 pack=|6 can; 12 cans=|12 can
+wc > White Claw : vp24=Variety|24; vp1=VP1|12 can; vp2=VP2|12 can; vp3=VP3|12 can; bc=Black Cherry|12 can; bc 6 pack=Black Cherry|6 can; mango=Mango|6 can; pineapple=Pineapple|6 can; peach=Peach|6 can; green apple=Green Apple|6 can; ruby grapefruit=Ruby Grapefruit|6 can; blackberry=Blackberry|6 can; grape=Grape|6 can; clawtail=Clawtail|6 can; surge vp1=Surge VP1|12 can; surge vp2=Surge VP2|12 can
+surfside > Surfside : tea=Iced Tea|4 can; lemonade=Lemonade|4 can; lemonade 12 cans=Lemonade|12 can; half and half=Half & Half|4 can; half half=Half & Half|4 can; green tea=Green Tea|4 can
+sun cruiser > Sun Cruiser : tea=Iced Tea + Vodka|4 can; lemonade=Lemonade + Vodka|4 can; 12 cans=Sampler|12 can
+twisted tea > Twisted Tea : og=Original|12 can; pp=Party Pack|12 can; pp light=Party Pack Light|12 can; light=Light|12 can; half half=Half & Half|12 can; half and half=Half & Half|12 can; 18=Original|18 can; 24 cans=Original|24 can; extreme=Extreme|12 can
+truly > Truly : berry=Berry|12 can; lemonade=Lemonade|12 can; star squad=Star Squad|12 can; unruly=Unruly|12 can; paradise=Paradise|12 can; unruly lemonade=Unruly Lemonade|12 can; punch=Punch|12 can; strawberry lemonade=Strawberry Lemonade|12 can; sunset mix=Sunset Mix|12 can; day dream 24 cans=Day Dream|24
+vizzy > Vizzy : vibrant tropical=Vibrant Tropical|12 can; cream pop=Cream Pop|12 can; refreshingly berry=Refreshingly Berry|12 can
+topo chico > Topo Chico : seltzer=Seltzer|12 can; margarita=Margarita|12 can; 6 pack=Seltzer|6 can
+simply > Simply : lemonade=Lemonade|12 can; bold=Bold|12 can
+smirnoff > Smirnoff Ice : 0 sugar vp=Zero Sugar Variety|12 can; 0 sugar rwb=Zero Sugar RWB|12 can; rwb=Red White & Berry|12 can; og 6 pack=Original|6 btl; screwdriver 6 pack=Screwdriver|6 btl; cream pop 6 pack=Cream Pop|6 btl; rwb 6 pack=Red White & Berry|6 btl; sunny days=Sunny Days|12 can; ice neon=Neon|12 can; island=Icy Island|12 can
+mikes > Mike's : og 6 pack=Original|6 can; bc 6 pack=Black Cherry|6 can; hard freeze=Hard Freeze|12 can; 12 btl=Original|12 btl; dirty=Dirty|12 can
+cayman jack > Cayman Jack : 6 pack=Margarita|6 btl; margarita 12 pack green box=Margarita|12 btl; margarita blue 12 pack=Blue|12 can; margarita 0 sugar 12 pack=Green 0 Sugar|12 can
+seagrams > Seagram's : 12 btl vp white box=Variety|12 btl; 12 btl pink box=Pink Box|12 btl; 12 cans=|12 can; jamaican me happy 4 pack=Jamaican Me Happy|4 btl
+angry orchard > Angry Orchard : 12 btl=|12 btl; 12 vp cans=|12 can
+`;
+// Size sections ("24s", "15s"...): [size, flavor added]; the line label is a brand shorthand
+const NOTE_SIZES={"24s":["24",""],"15s":["15",""],"15 pints":["15 pints","Pints"],"9 pints":["9 pints","Pints"],"12 bottles":["12 btl",""],"12 cans":["12 can",""],"20 bottles":["20 btl",""],"30 packs":["30",""]};
+const NOTE_SH={};
+"light=Labatt|Light; labatt light=Labatt|Light; light labatt=Labatt|Light; blue=Labatt|Blue; labatt blue=Labatt|Blue; blue labatt=Labatt|Blue; miller=Miller|; coors=Coors|; molson=Molson|; banquet=Banquet|; miller extra lite=Miller|Extra Light; miller extra light=Miller|Extra Light; yuengling=Yuengling|Traditional; yuengling light=Yuengling|Light; yuengling flight=Yuengling|Flight; yuengling black=Yuengling|Black & Tan; garage beer lime=Garage Beer|Lime; garage beer=Garage Beer|; keystone light=Keystone Light|; keystone light apple=Keystone Light|Apple; high life=High Life|; high life light=High Life|Light; molson gold=Molson|Gold; molson ice=Molson|Ice; pbr=PBR|; pbr light=PBR|Light; hamms=Hamm's|"
+  .split(";").forEach(p=>{const [k,v]=p.split("=");NOTE_SH[k.trim()]=v.split("|").map(x=>x.trim());});
+const NOTE_ITEMS={}, SECBRAND={}, HEADS={};
+for(const line of NOTE_MAP.split("\n")){const t=line.trim(); if(!t) continue;
+  const [head,body]=t.split(" : "); const [sec,br]=head.split(">").map(x=>x.trim());
+  if(sec!=="*"){HEADS[sec]=sec; if(br) SECBRAND[sec]=br;}
+  body.split(";").forEach(p=>{const [k,v]=p.split("="); const a=v.split("|").map(x=>x.trim()); NOTE_ITEMS[sec+"|"+k.trim()]=a.length===3?a:[br,a[0],a[1]];});
+}
+Object.keys(NOTE_SIZES).forEach(k=>{HEADS[k]=k;});
+Object.assign(HEADS,{"guiness":"guinness","samuel adams":"sam adams","white claw":"wc","mikes hard":"mikes","non alcoholic":"na","smirnoff ice":"smirnoff","6 pack":"6 packs","12 bottle":"12 bottles","12 btl":"12 bottles","12 can":"12 cans","20 bottle":"20 bottles","30 pack":"30 packs","30s":"30 packs"});
+const norm=s=>s.toLowerCase().replace(/['’]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+const titleCase=s=>s.replace(/\b[a-z]/g,c=>c.toUpperCase());
+// Best guess for a line the map doesn't know: [brand, flavor, size]
+function guessItem(sec,label){
+  if(NOTE_SIZES[sec]) return [titleCase(label),NOTE_SIZES[sec][1],NOTE_SIZES[sec][0]];
+  let size="",rest=label,m;
+  if((m=rest.match(/\b(\d+)\s*(?:pack\s*)?(btl|bottles?|cans?)\b/))){size=m[1]+(m[2][0]==="b"?" btl":" can");rest=rest.replace(m[0]," ");}
+  else if((m=rest.match(/\b(\d+)\s*packs?\b/))){size=m[1]+" pack";rest=rest.replace(m[0]," ");}
+  rest=rest.replace(/\s+/g," ").trim();
+  if(sec&&rest.startsWith(sec+" ")) rest=rest.slice(sec.length+1);
+  if(SECBRAND[sec]) return [SECBRAND[sec],titleCase(rest),size||"pack"];
+  return sec?[titleCase(sec),titleCase(rest),size||"pack"]:[titleCase(rest||label),"",size||"pack"];
+}
+// Returns the items in note order, the counts (numbers on a line added together) and the original text of any line with letters in it
+function parseNote(text){
+  const lines=text.split(/\r?\n/), ids=[], qty={}, note={}; let sec="", unknown=0;
+  for(let i=0;i<lines.length;i++){
+    const raw=lines[i].trim(); if(!raw) continue;
+    const ci=raw.indexOf(":"), hasColon=ci>=0, label=norm(hasColon?raw.slice(0,ci):raw);
+    let val=hasColon?raw.slice(ci+1).trim():"";
+    if(!label) continue;
+    let spec=NOTE_ITEMS[sec+"|"+label]||null;
+    if(!spec&&NOTE_SIZES[sec]&&NOTE_SH[label]){const [b,f]=NOTE_SH[label]; spec=[b,[f,NOTE_SIZES[sec][1]].filter(Boolean).join(" "),NOTE_SIZES[sec][0]];}
+    if(!spec&&!val&&HEADS[label]){sec=HEADS[label];continue;}
+    let guessed=false;
+    if(!spec&&NOTE_ITEMS["*|"+label]){spec=NOTE_ITEMS["*|"+label]; sec=norm(spec[0]);}
+    if(!spec){ if(!hasColon){sec=label;continue;} spec=guessItem(sec,label); guessed=true; }
+    if(!val){const nx=(lines[i+1]||"").trim(); if(nx&&!nx.includes(":")&&/^\d/.test(nx)&&!HEADS[norm(nx)]){val=nx;i++;}}
+    const b=brandCanon(spec[0]), f=spec[1], s=spec[2];
+    let it=byId[key(b,f,s)];
+    if(!it){ensureBrand(b); it=addCat(b,f,s,true); store.custom.push([b,f,s]); if(guessed) unknown++;}
+    if(!ids.includes(it.id)) ids.push(it.id);
+    const n=(val.match(/\d+/g)||[]).reduce((a,x)=>a+Number(x),0);
+    if(n>0) qty[it.id]=Math.min(99,(qty[it.id]||0)+n);
+    if(n>0&&/[^\d\s]/.test(val)) note[it.id]=val;
+  }
+  return {ids,qty,note,unknown};
+}
+
+// Everything saved on this phone: new items, the store names, and one list per place ("backstock" or "store:<id>")
+const KEY="back-stock-pull-v3";
+// accounts: {username:{salt,hash,name,main:[store ids]}}; session: signed-in username; history: saved pull lists
+let store={custom:[],stores:[{id:"kroger-brighton",name:"Kroger Hamburg"}],lists:{},accounts:{},session:null,history:[]};
+try{
+  const s=JSON.parse(localStorage.getItem(KEY));
+  if(s&&s.lists) store=Object.assign(store,s);
+  else{
+    const v2=JSON.parse(localStorage.getItem("back-stock-pull-v2"));
+    if(v2&&Array.isArray(v2.list)){store.custom=v2.custom||[];store.lists.backstock={list:v2.list,qty:v2.qty||{},done:v2.done||{},seen:v2.seen||{}};}
+    else{const o=JSON.parse(localStorage.getItem("back-stock-pull-v1"));
+      if(o&&o.qty){const l={list:DEFAULT.slice(),qty:{},done:{},seen:{}};
+        for(const k in o.qty) if(OLDMAP[k]) l.qty[OLDMAP[k]]=o.qty[k]; for(const k in (o.done||{})) if(OLDMAP[k]) l.done[OLDMAP[k]]=true;
+        store.lists.backstock=l;}}
+  }
+}catch(e){}
+if(!Array.isArray(store.stores)) store.stores=[];
+// The first store was named Kroger Brighton by mistake; rename it wherever it was already saved (its list and counts stay)
+store.stores.forEach(s=>{if(s.id==="kroger-brighton"&&s.name==="Kroger Brighton") s.name="Kroger Hamburg";});
+if(!Array.isArray(store.custom)) store.custom=[];
+store.custom.forEach(([b,f,s])=>{ensureBrand(b);addCat(b,f,s,true);});
+// One-time: store lists made before the truck day note was built in switch over to it (counts on matching items stay)
+if(store.truckV!==2){
+  for(const k in store.lists) if(k.startsWith("store:")){const l=store.lists[k]; l.list=TRUCK.slice();
+    ["qty","done","seen"].forEach(p=>{for(const id in (l[p]||{})) if(!TRUCK.includes(id)) delete l[p][id];});}
+  store.truckV=2;
+}
+if(!store.accounts||typeof store.accounts!=="object") store.accounts={};
+if(!Array.isArray(store.history)) store.history=[];
+// The old single Backstock list now belongs to the first store
+if(store.lists.backstock){ if(store.stores[0]&&!store.lists["backstock:"+store.stores[0].id]) store.lists["backstock:"+store.stores[0].id]=store.lists.backstock; delete store.lists.backstock; }
+// Items whose pack changed: Super Lyte is an 8 can, Mike's Original and Black Cherry six-packs are cans
+const ID_RENAME={"super-lyte-12-can":"super-lyte-8-can","mike-s-original-6-btl":"mike-s-original-6-can","mike-s-black-cherry-6-btl":"mike-s-black-cherry-6-can"};
+// Lists are kept per store: "backstock:<store id>" starts from the back-stock sheet, "store:<store id>" (truck day) from the truck day note
+function getList(c){
+  let l=store.lists[c];
+  if(!l) l=store.lists[c]={list:(c.startsWith("backstock")?DEFAULT:TRUCK).slice(),qty:{},done:{},seen:{},note:{}};
+  ["qty","done","seen","note"].forEach(k=>{l[k]=l[k]||{}; for(const o in ID_RENAME) if(o in l[k]){l[k][ID_RENAME[o]]=l[k][o]; delete l[k][o];}});
+  l.list=[...new Set((l.list||[]).map(id=>ID_RENAME[id]||id))].filter(id=>byId[id]);
+  return l;
+}
+let ctx="", mode="truck", state={list:[],qty:{},done:{},seen:{},note:{}};
+const acct=()=>store.accounts[store.session]||null;
+const prefix=()=>mode==="truck"?"store:":"backstock:";
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}};
+const full=it=>it.flavor?it.brand+" "+it.flavor:it.brand;
+// All non-alcoholic items show as one group; every other item groups under its brand
+const NA="Non-Alcoholic";
+const isNA=it=>BRAND_CAT[it.brand]===NA;
+const grpOf=it=>isNA(it)?NA:it.brand;
+const gname=g=>g===NA?"All NA":g;
+const lbl=it=>isNA(it)?full(it):(it.flavor||it.brand);
+const noteHtml=it=>state.note&&state.note[it.id]?`<span class="note">${esc(state.note[it.id])}</span>`:"";
+/* ---------- Pictures: product photos ("p:brand-flavor"), brand logos ("l:brand") and the O&W logo ("ow") from O&W's product catalog ---------- */
+const IMG={};
+{const raw=window.BEER_IMG||{};
+ for(const k in raw){try{const s=raw[k],c=s.indexOf(","),bin=atob(s.slice(c+1)),u=new Uint8Array(bin.length);
+   for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+   IMG[k]=URL.createObjectURL(new Blob([u],{type:s.slice(5,s.indexOf(";"))}));}catch(e){IMG[k]=raw[k];}}}
+const pimg=it=>IMG["p:"+slug(it.brand+"|"+it.flavor)]||"";
+const limg=g=>IMG["l:"+slug(g)]||"";
+const ICON={can:'<svg viewBox="0 0 12 20" aria-hidden="true"><rect x="2.6" y=".8" width="6.8" height="1.8" rx=".7"/><rect x="1.5" y="2.4" width="9" height="16.8" rx="2.2"/></svg>',
+  btl:'<svg viewBox="0 0 12 20" aria-hidden="true"><path d="M4.6.8h2.8v4.4c0 1.3 2.6 2 2.6 4.6v7.7a1.7 1.7 0 0 1-1.7 1.7H3.7A1.7 1.7 0 0 1 2 17.5V9.8c0-2.6 2.6-3.3 2.6-4.6z"/></svg>'};
+const pack=it=>/btl|bottle/.test(it.size)?"btl":"can";
+const chipHtml=it=>`<span class="chip ${pack(it)}">${ICON[pack(it)]}${esc(it.size)}</span>`;
+// Every line gets a can or a bottle: the real photo when it shows the right container (or a box),
+// otherwise a drawn can or bottle in the brand's color wearing the product or brand logo
+const META=window.BEER_META||{t:{},c:{}};
+const thumb=it=>{
+  const want=pack(it), k=slug(it.brand+"|"+it.flavor), cat=IMG["p:"+k], t=META.t["p:"+k], other=want==="can"?"pb:":"pc:";
+  // best real photo: one found for this exact container, then the catalog photo if it matches (or is a box), then any real photo of the drink
+  const src=IMG["p"+want[0]+":"+k]||(cat&&(t==="x"||t===want[0])?cat:"")||cat||IMG[other+k];
+  if(src) return `<span class="ph"><img src="${src}" alt="" loading="lazy"></span>`;
+  const label=IMG["g:"+k]||limg(it.brand), col=META.c[slug(it.brand)]||"#1b3a8f";
+  return `<span class="ph"><span class="mk ${want}" style="--c:${col}">${label?`<img src="${label}" alt="" loading="lazy">`:""}</span></span>`;
+};
+const headHtml=g=>limg(g)?`<span class="logo"><img src="${limg(g)}" alt=""></span><b class="sr">${esc(gname(g))}</b>`:`<b>${esc(gname(g))}</b>`;
+// [category or null, group, items] in display order; heaviest packs first within a brand
+function grouped(list){
+  const out=[];
+  for(const [cat,brands] of CATS){
+    const ord=(x,y)=>brands.indexOf(x.brand)-brands.indexOf(y.brand)||SECW[x.sec]-SECW[y.sec]||listIdx(x.id)-listIdx(y.id);
+    let first=true;
+    for(const g of (cat===NA?[NA]:brands)){
+      const its=list.filter(it=>BRAND_CAT[it.brand]===cat&&grpOf(it)===g).sort(ord);
+      if(!its.length) continue;
+      out.push([first?cat:null,g,its]); first=false;
+    }
+  }
+  return out;
+}
+const onList=id=>state.list.includes(id);
+const listIdx=id=>state.list.indexOf(id);
+
+document.getElementById("date").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+// Pass an undo function to add an Undo button and keep the message up longer
+function toast(msg,undo){
+  const t=document.getElementById("toast"); t.textContent=msg;
+  if(undo){const b=document.createElement("button"); b.className="undo"; b.textContent="Undo"; b.addEventListener("click",()=>{t.hidden=true;undo();}); t.appendChild(b);}
+  t.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(()=>{t.hidden=true;},undo?7000:1800);
+}
+function armButton(btn,label,armedLabel,action){
+  btn.addEventListener("click",()=>{
+    if(!btn.classList.contains("arm")){btn.classList.add("arm");btn.textContent=armedLabel;clearTimeout(btn.h);btn.h=setTimeout(()=>{btn.classList.remove("arm");btn.textContent=label;},3000);return;}
+    clearTimeout(btn.h);btn.classList.remove("arm");btn.textContent=label;action();
+  });
+}
+
+/* ---------- Fill in ---------- */
+const $fill=document.getElementById("fill"), $search=document.getElementById("search");
+function hay(it){return (it.brand+" "+it.flavor+" "+it.size+" "+(ALIAS[it.brand.toLowerCase()]||"")+(isNA(it)?" na non-alcoholic":"")).toLowerCase().replace(/'/g,"");}
+function matches(it,q){const h=hay(it);return q.split(/\s+/).filter(Boolean).every(t=>h.includes(t));}
+function renderFill(){
+  const q=$search.value.trim().toLowerCase().replace(/'/g,"");
+  const listed=state.list.map(id=>byId[id]).filter(it=>!q||matches(it,q));
+  let html="";
+  for(const [cat,g,its] of grouped(listed)){
+    if(cat) html+=`<h2 class="cat">${cat}</h2>`;
+    html+=`<div class="brand"><div class="bh">${headHtml(g)}<span class="bt" id="bt-${slug(g)}"></span></div>`+its.map(rowHtml).join("")+`</div>`;
+  }
+  if(!state.list.length) html=`<div class="empty">Your list is empty. Tap <b>+ Add item</b> to build this list.</div>`;
+  else if(!html) html=`<div class="empty">Nothing on your list matches “${esc(q)}”.</div>`;
+  $fill.innerHTML=html;
+  new Set(listed.map(grpOf)).forEach(updateBrand);
+  updateTotals();
+}
+function rowHtml(it){
+  const n=state.qty[it.id]||0, c=!!state.seen[it.id];
+  return `<div class="row${n?" has":""}${c?" checked":""}" data-id="${it.id}">
+    <button class="ck" aria-pressed="${c}" aria-label="Checked ${esc(full(it))} ${it.size} on the floor"><span class="box">${c?"✓":""}</span></button>
+    ${thumb(it)}<div class="nm"><span class="lbl">${esc(lbl(it))}</span>${chipHtml(it)}${noteHtml(it)}</div>
+    <div class="step"><button data-d="-1" aria-label="Less ${esc(full(it))}">−</button><input id="q-${it.id}" inputmode="numeric" pattern="[0-9]*" value="${n||""}" placeholder="0" aria-label="${esc(full(it))} ${esc(it.size)} needed"><button data-d="1" aria-label="More ${esc(full(it))}">+</button></div></div>`;
+}
+function updateBrand(b){
+  const el=document.getElementById("bt-"+slug(b)); if(!el) return;
+  const its=state.list.map(id=>byId[id]).filter(it=>grpOf(it)===b);
+  const need=its.reduce((s,it)=>s+(state.qty[it.id]||0),0), seen=its.filter(it=>state.seen[it.id]).length;
+  el.textContent=`${seen}/${its.length} checked`+(need?` · ${need} needed`:"");
+}
+function updateTotals(){
+  const n=state.list.filter(id=>state.qty[id]>0).length;
+  document.getElementById("badge").textContent=n;
+  const seen=state.list.filter(id=>state.seen[id]).length, tot=state.list.length;
+  document.getElementById("prog").textContent=`${seen} of ${tot} checked`;
+  document.getElementById("progbar").style.width=tot?(seen/tot*100)+"%":"0";
+}
+function setQty(id,n){
+  n=Math.max(0,Math.min(99,n|0));
+  if(n){state.qty[id]=n; state.seen[id]=true;} else {delete state.qty[id]; delete state.done[id]; delete state.note[id];}
+  save();
+  const row=$fill.querySelector(`.row[data-id="${id}"]`);
+  if(row){row.classList.toggle("has",!!n); syncCheck(row,!!state.seen[id]); const inp=row.querySelector("input"); if(document.activeElement!==inp) inp.value=n||"";}
+  updateBrand(grpOf(byId[id])); updateTotals();
+}
+function syncCheck(row,c){row.classList.toggle("checked",c);const b=row.querySelector(".ck");b.setAttribute("aria-pressed",c);b.firstElementChild.textContent=c?"✓":"";}
+$fill.addEventListener("click",e=>{
+  const ck=e.target.closest(".ck");
+  if(ck){const row=ck.closest(".row"),id=row.dataset.id; if(state.seen[id]) delete state.seen[id]; else state.seen[id]=true; save(); syncCheck(row,!!state.seen[id]); updateBrand(grpOf(byId[id])); updateTotals(); return;}
+  const btn=e.target.closest("button[data-d]"); if(!btn) return;
+  const id=btn.closest(".row").dataset.id; setQty(id,(state.qty[id]||0)+Number(btn.dataset.d));
+});
+$fill.addEventListener("input",e=>{if(e.target.tagName==="INPUT") setQty(e.target.closest(".row").dataset.id,parseInt(e.target.value,10)||0);});
+$fill.addEventListener("focusin",e=>{if(e.target.tagName==="INPUT") e.target.select();});
+$search.addEventListener("input",renderFill);
+// One tap clears the whole list right away; Undo brings it back
+document.getElementById("clearlist").addEventListener("click",()=>{
+  if(!state.list.length){toast("The list is already empty");return;}
+  const snap=JSON.stringify(state), st=state;
+  state.list=[];state.qty={};state.done={};state.seen={};state.note={};save();$search.value="";renderFill();
+  toast("List cleared",()=>{Object.assign(st,JSON.parse(snap));save();if(state===st) renderFill();});
+});
+
+/* ---------- Pull list ---------- */
+const $pull=document.getElementById("pull");
+const pulled=()=>state.list.filter(id=>state.qty[id]>0).map(id=>byId[id]);
+function renderPull(){
+  const list=pulled(), total=list.reduce((s,it)=>s+state.qty[it.id],0), doneN=list.filter(it=>state.done[it.id]).length;
+  document.getElementById("pullsummary").textContent=list.length?`${list.length} items · ${total} total · ${doneN} pulled. Tap a line once it's on the cart.`:"";
+  if(!list.length){$pull.innerHTML=`<div class="empty">No items yet. Go to <b>Fill in</b> and tap + on what the floor needs. They'll show up here grouped by brand.</div>`;return;}
+  let html=doneN===list.length?`<div class="cheers">Cart's loaded. Every item on this list is pulled.</div>`:"";
+  for(const [cat,b,its] of byBrand(list)){
+    if(cat) html+=`<h2 class="cat">${cat}</h2>`;
+    html+=`<h3 class="sec">${headHtml(b)}<span>${its.reduce((s,it)=>s+state.qty[it.id],0)} total</span></h3><div class="plist">`+its.map(it=>{const d=!!state.done[it.id];
+      return `<button class="pi${d?" done":""}" data-id="${it.id}" aria-pressed="${d}"><span class="box">${d?"✓":""}</span>${thumb(it)}<span class="nm"><span class="lbl">${esc(lbl(it))}</span>${chipHtml(it)}${noteHtml(it)}</span><span class="q">${state.qty[it.id]}</span></button>`}).join("")+`</div>`;
+  }
+  $pull.innerHTML=html;
+}
+$pull.addEventListener("click",e=>{const b=e.target.closest(".pi"); if(!b) return; const id=b.dataset.id; if(state.done[id]) delete state.done[id]; else state.done[id]=true; save(); renderPull();});
+// Groups items by category then brand (same order as Fill in); heaviest packs first within a brand
+function byBrand(list){return grouped(list);}
+function listText(){
+  const head=document.getElementById("listtitle").textContent.toUpperCase()+(ctx.startsWith("store:")?" TRUCK DAY":" BACKSTOCK");
+  let out=`${head} ${new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}\n`;
+  for(const [cat,b,its] of byBrand(pulled())){
+    out+=`\n${(b===NA?"NON-ALCOHOLIC":b.toUpperCase())}\n`+its.map(it=>`- ${b===NA?full(it)+" ":it.flavor?it.flavor+" ":""}${it.size}: ${state.qty[it.id]}${state.note[it.id]?" ("+state.note[it.id]+")":""}`).join("\n")+"\n";
+  }
+  return out.trim();
+}
+document.getElementById("copy").addEventListener("click",()=>{
+  if(!pulled().length){toast("Nothing to copy yet");return;}
+  const txt=listText(), fb=document.getElementById("copyfallback");
+  const fallback=()=>{fb.hidden=false;fb.value=txt;fb.focus();fb.select();toast("Select all and copy");};
+  try{navigator.clipboard.writeText(txt).then(()=>{fb.hidden=true;toast("Copied. Paste it in a text");},fallback);}catch(e){fallback();}
+});
+armButton(document.getElementById("clearcounts"),"Clear counts","Tap again to clear counts",()=>{
+  state.qty={};state.done={};state.seen={};state.note={};save();renderFill();renderPull();toast("Counts and checks cleared");
+});
+
+/* ---------- Add sheet ---------- */
+const $sheet=document.getElementById("sheet"), $as=document.getElementById("addsearch"), $res=document.getElementById("results"), $form=document.getElementById("newform");
+const $ns=document.getElementById("ns"), $nsoWrap=document.getElementById("nsoWrap");
+$ns.innerHTML=SIZES.map(s=>`<option${s==="12 can"?" selected":""}>${s}</option>`).join("")+`<option value="__other">Other…</option>`;
+$ns.addEventListener("change",()=>{$nsoWrap.hidden=$ns.value!=="__other";});
+function refreshBrandList(){document.getElementById("brandlist").innerHTML=Object.keys(BRAND_CAT).map(b=>`<option value="${esc(b)}">`).join("");}
+function openSheet(){$sheet.hidden=false;document.body.style.overflow="hidden";$as.value="";$form.hidden=true;renderResults();setTimeout(()=>$as.focus(),50);}
+function closeSheet(){$sheet.hidden=true;document.body.style.overflow="";renderFill();}
+document.getElementById("openadd").addEventListener("click",openSheet);
+document.getElementById("closeadd").addEventListener("click",closeSheet);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$sheet.hidden) closeSheet();});
+function renderResults(){
+  const q=$as.value.trim().toLowerCase().replace(/'/g,"");
+  const hint=document.getElementById("addhint");
+  if(!q){hint.textContent=`${catalog.length} items saved from your past lists. Type to search, e.g. “claw 12 can” or “yung”. Tap to add, tap again to take it off.`;$res.hidden=true;$res.innerHTML="";return;}
+  const m=catalog.filter(it=>matches(it,q));
+  hint.textContent=m.length?`${m.length} match${m.length===1?"":"es"}`:`Nothing saved matches “${$as.value.trim()}”. Use + Add new item.`;
+  $res.hidden=!m.length;
+  $res.innerHTML=m.slice(0,80).map(it=>{const on=onList(it.id);
+    return `<button class="res${on?" on":""}" data-id="${it.id}">${thumb(it)}<span class="nm"><span class="lbl">${esc(full(it))}</span>${chipHtml(it)}</span><span class="pill">${on?"✓ On list":"Add"}</span></button>`}).join("");
+}
+$as.addEventListener("input",renderResults);
+$res.addEventListener("click",e=>{
+  const b=e.target.closest(".res"); if(!b) return; const id=b.dataset.id, it=byId[id];
+  if(onList(id)){state.list=state.list.filter(x=>x!==id);delete state.qty[id];delete state.done[id];delete state.seen[id];delete state.note[id];toast("Removed "+full(it));}
+  else{state.list.push(id);toast("Added "+full(it)+" ("+it.size+")");}
+  save();renderResults();updateTotals();
+});
+document.getElementById("opennew").addEventListener("click",()=>{
+  $form.hidden=false;refreshBrandList();document.getElementById("nerr").hidden=true;
+  document.getElementById("nb").value="";document.getElementById("nf").value="";document.getElementById("nso").value="";
+  $ns.value="12 can";$nsoWrap.hidden=true;document.getElementById("nb").focus();
+});
+document.getElementById("cancelnew").addEventListener("click",()=>{$form.hidden=true;});
+document.getElementById("addall").addEventListener("click",()=>{
+  catalog.forEach(it=>{if(!onList(it.id)) state.list.push(it.id);});
+  save();renderResults();updateTotals();toast(`All ${catalog.length} saved items are on the list`);
+});
+$form.addEventListener("submit",e=>{
+  e.preventDefault();
+  const err=document.getElementById("nerr");
+  const b=brandCanon(document.getElementById("nb").value), f=document.getElementById("nf").value.trim();
+  const s=($ns.value==="__other"?document.getElementById("nso").value:$ns.value).trim().toLowerCase();
+  if(!b){err.textContent="Type a brand first.";err.hidden=false;return;}
+  if(!s){err.textContent="Type the size, like “16 can”.";err.hidden=false;return;}
+  let it=byId[key(b,f,s)];
+  if(!it){ensureBrand(b);it=addCat(b,f,s,true);store.custom.push([b,f,s]);}
+  if(!onList(it.id)) state.list.push(it.id);
+  save();$form.hidden=true;$as.value=full(it);renderResults();updateTotals();
+  toast("Saved and added "+full(it)+" ("+it.size+")");
+});
+
+/* ---------- Tabs ---------- */
+function show(tab){
+  const pull=tab==="pull";
+  document.getElementById("view-fill").hidden=pull;
+  document.getElementById("view-pull").hidden=!pull;
+  document.getElementById("tab-fill").setAttribute("aria-selected",!pull);
+  document.getElementById("tab-pull").setAttribute("aria-selected",pull);
+  if(pull) renderPull();
+  window.scrollTo(0,0);
+}
+document.getElementById("tab-fill").addEventListener("click",()=>show("fill"));
+document.getElementById("tab-pull").addEventListener("click",()=>show("pull"));
+
+/* ---------- Screens: home, Truck Day stores, list ---------- */
+function showScreen(name){
+  ["auth","profile","home","stores","list"].forEach(s=>{document.getElementById("screen-"+s).hidden=s!==name;});
+  if(name==="home") renderHome();
+  if(name==="stores") renderStores();
+  window.scrollTo(0,0);
+}
+function summary(c){
+  const l=store.lists[c]; if(!l) return "Not started yet";
+  const n=(l.list||[]).filter(id=>l.qty&&l.qty[id]>0).length;
+  return n?`${n} item${n===1?"":"s"} with counts`:`${(l.list||[]).length} items on the list, no counts yet`;
+}
+function renderHome(){
+  const a=acct(), n=store.stores.length, s=`${n} store${n===1?"":"s"}`;
+  document.getElementById("welcome").textContent=a&&a.name?"Welcome, "+a.name:"Welcome";
+  document.getElementById("home-back-sub").textContent="Pick a store, check the floor and pull from back stock · "+s;
+  document.getElementById("home-truck-sub").textContent="Pick a store and work its truck list · "+s;
+  renderHistory();
+}
+function showStores(m){
+  mode=m;
+  document.getElementById("storestitle").textContent=m==="truck"?"Truck Day":"Backstock";
+  document.getElementById("storeshint").textContent=m==="truck"?"Pick a store. Each store keeps its own truck list and counts.":"Pick a store. Each store keeps its own back-stock list and counts.";
+  document.getElementById("pastewrap").hidden=m!=="truck";
+  showScreen("stores");
+}
+// Stores on the signed-in person's profile come first
+function orderedStores(){const main=(acct()&&acct().main)||[]; return store.stores.slice().sort((x,y)=>main.includes(y.id)-main.includes(x.id));}
+const mainTag=s=>acct()&&(acct().main||[]).includes(s.id)?"Your store · ":"";
+function openList(c){
+  ctx=c; state=getList(c);
+  const truck=c.startsWith("store:"), sid=c.slice(c.indexOf(":")+1), st=store.stores.find(s=>s.id===sid);
+  document.getElementById("listtitle").textContent=st?st.name:"Store";
+  document.getElementById("date").textContent=truck?"Truck Day":"Backstock";
+  document.getElementById("fillhint").textContent=truck
+    ?"Tap + for how many of each can go out on the floor. Tick the box once you've checked it. Everything saves on this phone."
+    :"Tick the box once you've looked at it on the floor. Tap + for how many you need. Everything saves on this phone.";
+  $search.value=""; document.getElementById("copyfallback").hidden=true;
+  showScreen("list"); show("fill"); renderFill();
+}
+let armedStore=null;
+function renderStores(){
+  const el=document.getElementById("storelist");
+  el.innerHTML=store.stores.length?orderedStores().map(s=>`<div class="storerow"><button class="choice" data-store="${esc(s.id)}"><b>${esc(s.name)}</b><span>${mainTag(s)}${summary(prefix()+s.id)}</span></button><button class="rm${armedStore===s.id?" arm":""}" data-rm="${esc(s.id)}" aria-label="Remove ${esc(s.name)}">${armedStore===s.id?"Tap again":"Remove"}</button></div>`).join("")
+    :`<div class="empty">No stores yet. Add one below.</div>`;
+}
+document.getElementById("storelist").addEventListener("click",e=>{
+  const open=e.target.closest("[data-store]");
+  if(open){armedStore=null;openList(prefix()+open.dataset.store);return;}
+  const rm=e.target.closest("[data-rm]"); if(!rm) return;
+  const id=rm.dataset.rm;
+  if(armedStore!==id){armedStore=id;renderStores();clearTimeout(renderStores.h);renderStores.h=setTimeout(()=>{armedStore=null;renderStores();},3000);return;}
+  clearTimeout(renderStores.h);armedStore=null;
+  const gone=store.stores.find(s=>s.id===id);
+  store.stores=store.stores.filter(s=>s.id!==id);delete store.lists["store:"+id];delete store.lists["backstock:"+id];
+  Object.values(store.accounts).forEach(a=>{a.main=(a.main||[]).filter(x=>x!==id);});save();renderStores();
+  toast("Removed "+(gone?gone.name:"store"));
+});
+document.getElementById("storeform").addEventListener("submit",e=>{
+  e.preventDefault();
+  const inp=document.getElementById("sn"), err=document.getElementById("serr"), name=inp.value.trim();
+  if(!name){err.textContent="Type the store name first.";err.hidden=false;return;}
+  if(store.stores.some(s=>s.name.toLowerCase()===name.toLowerCase())){err.textContent="That store is already on the list.";err.hidden=false;return;}
+  const ta=document.getElementById("st"); let parsed=null;
+  if(mode==="truck"&&ta.value.trim()){
+    parsed=parseNote(ta.value);
+    if(!parsed.ids.length){err.textContent="Couldn't find any items in that text. Each item needs its own line, like “miller: 4”.";err.hidden=false;return;}
+  }
+  err.hidden=true;
+  const id=slug(name)+"-"+Date.now().toString(36);
+  store.stores.push({id,name});
+  if(parsed){const seen={}; Object.keys(parsed.qty).forEach(k=>{seen[k]=true;});
+    store.lists["store:"+id]={list:parsed.ids,qty:parsed.qty,done:{},seen,note:parsed.note};}
+  save();inp.value="";ta.value="";
+  if(parsed){openList("store:"+id);
+    toast(`${name}: ${parsed.ids.length} items, ${Object.keys(parsed.qty).length} with counts`+(parsed.unknown?`, ${parsed.unknown} new`:""));}
+  else{renderStores();toast("Added "+name);}
+});
+document.getElementById("go-back").addEventListener("click",()=>showStores("backstock"));
+document.getElementById("go-truck").addEventListener("click",()=>showStores("truck"));
+document.getElementById("storesback").addEventListener("click",()=>showScreen("home"));
+document.getElementById("listback").addEventListener("click",()=>showStores(ctx.startsWith("store:")?"truck":"backstock"));
+
+/* ---------- Sign in and profile (kept on this phone; the password is a simple lock, stored scrambled) ---------- */
+async function hashPw(salt,pw){
+  const s=salt+"|"+pw;
+  try{const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)); return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");}
+  catch(e){let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return "x"+h.toString(16);}
+}
+async function doAuth(create){
+  const u=document.getElementById("au").value.trim().toLowerCase(), pw=document.getElementById("ap"), err=document.getElementById("aerr");
+  const fail=m=>{err.textContent=m;err.hidden=false;};
+  if(!/^[a-z0-9.-]{2,30}$/.test(u)) return fail("Type a username: 2 or more letters or numbers, no spaces.");
+  if(pw.value.length<4) return fail("Type a password with 4 or more characters.");
+  const a=Object.prototype.hasOwnProperty.call(store.accounts,u)?store.accounts[u]:null;
+  if(create){
+    if(a) return fail("That username is already on this phone. Tap Sign in, or pick another username.");
+    const salt=Math.random().toString(36).slice(2)+Date.now().toString(36);
+    store.accounts[u]={salt,hash:await hashPw(salt,pw.value),name:"",main:[]};
+  }else{
+    if(!a) return fail("No account with that username on this phone. Tap Create account to make one.");
+    if(await hashPw(a.salt,pw.value)!==a.hash) return fail("That password doesn't match. Try again.");
+  }
+  store.session=u; save(); err.hidden=true; pw.value="";
+  if(store.accounts[u].name&&store.accounts[u].last) showScreen("home"); else openProfile();
+}
+document.getElementById("authform").addEventListener("submit",e=>{e.preventDefault();doAuth(false);});
+document.getElementById("signup").addEventListener("click",()=>doAuth(true));
+function renderChecks(checked){
+  document.getElementById("pstores").innerHTML=store.stores.length
+    ?store.stores.map(s=>`<label class="chk"><input type="checkbox" value="${esc(s.id)}"${checked.includes(s.id)?" checked":""}><span>${esc(s.name)}</span></label>`).join("")
+    :`<p class="hint">No stores yet. Add one below.</p>`;
+}
+const checkedStores=()=>[...document.querySelectorAll("#pstores input:checked")].map(i=>i.value);
+function openProfile(){
+  const a=acct(); if(!a){showScreen("auth");return;}
+  // name = first name (shown in the welcome), last = last name; older profiles had one name box
+  if(a.last===undefined&&a.name&&a.name.includes(" ")){const p=a.name.trim().split(/\s+/); a.name=p.shift(); a.last=p.join(" ");}
+  document.getElementById("pf").value=a.name||""; document.getElementById("pl").value=a.last||""; document.getElementById("perr").hidden=true;
+  renderChecks(a.main||[]); showScreen("profile");
+}
+document.getElementById("paddstore").addEventListener("click",()=>{
+  const inp=document.getElementById("pns"), err=document.getElementById("perr"), name=inp.value.trim();
+  if(!name){err.textContent="Type the store name first.";err.hidden=false;return;}
+  if(store.stores.some(s=>s.name.toLowerCase()===name.toLowerCase())){err.textContent="That store is already on the list.";err.hidden=false;return;}
+  err.hidden=true; const id=slug(name)+"-"+Date.now().toString(36), keep=checkedStores();
+  store.stores.push({id,name}); save(); inp.value=""; renderChecks(keep.concat(id));
+});
+document.getElementById("profform").addEventListener("submit",e=>{
+  e.preventDefault();
+  const a=acct(), err=document.getElementById("perr"), first=document.getElementById("pf").value.trim(), last=document.getElementById("pl").value.trim();
+  if(!a){showScreen("auth");return;}
+  if(!first||!last){err.textContent="Type your first and last name.";err.hidden=false;return;}
+  a.name=first; a.last=last; a.main=checkedStores(); save(); showScreen("home");
+});
+document.getElementById("editprofile").addEventListener("click",openProfile);
+document.getElementById("signout").addEventListener("click",()=>{store.session=null;save();document.getElementById("au").value="";showScreen("auth");});
+
+/* ---------- History: every "Finish & save" on a pull list, totalled by store, week, month and product ---------- */
+armButton(document.getElementById("finish"),"Finish & save to history","Tap again to save and clear counts",()=>{
+  const list=pulled(); if(!list.length){toast("Nothing to save yet");return;}
+  const sid=ctx.slice(ctx.indexOf(":")+1), st=store.stores.find(s=>s.id===sid), items={};
+  list.forEach(it=>{items[it.id]=state.qty[it.id];});
+  store.history.push({t:Date.now(),sid,sname:st?st.name:"Store",kind:ctx.startsWith("store:")?"truck":"backstock",user:store.session||"",items});
+  if(store.history.length>600) store.history=store.history.slice(-600);
+  state.qty={};state.done={};state.seen={};state.note={};save();renderFill();renderPull();toast("Saved to history. Counts cleared.");
+});
+function agg(es){
+  const o={total:0,items:{},stores:{}};
+  for(const e of es) for(const id in e.items){const n=e.items[id]; o.total+=n; o.items[id]=(o.items[id]||0)+n;
+    const s=o.stores[e.sid]=o.stores[e.sid]||{name:storeName(e),n:0}; s.n+=n;}
+  return o;
+}
+const storeName=e=>{const s=store.stores.find(x=>x.id===e.sid); return s?s.name:e.sname;};
+const itemName=id=>byId[id]?full(byId[id])+" · "+byId[id].size:id;
+const prodRows=items=>Object.entries(items).sort((a,b)=>b[1]-a[1]).map(([id,n])=>`<div class="hr"><span>${esc(itemName(id))}</span><b>${n}</b></div>`).join("");
+function groupHtml(label,es,showStores){
+  const a=agg(es);
+  return `<details class="hx2"><summary><span>${esc(label)}</span><b>${a.total}</b></summary>`
+    +(showStores?`<div class="hsub">Stores</div>`+Object.values(a.stores).sort((x,y)=>y.n-x.n).map(s=>`<div class="hr"><span>${esc(s.name)}</span><b>${s.n}</b></div>`).join(""):"")
+    +`<div class="hsub">Each product</div>`+prodRows(a.items)+`</details>`;
+}
+function renderHistory(){
+  const H=store.history, el=document.getElementById("history");
+  if(!H.length){el.innerHTML=`<h2 class="cat">History</h2><div class="empty">No history yet. When you finish a pull list, tap <b>Finish &amp; save to history</b> and the totals show up here.</div>`;return;}
+  const by=fn=>{const m=new Map(); for(const e of H){const [k,label]=fn(e); if(!m.has(k)) m.set(k,{k,label,es:[]}); m.get(k).es.push(e);} return [...m.values()];};
+  const wk=e=>{const d=new Date(e.t); d.setHours(0,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7)); return [d.getTime(),"Week of "+d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})];};
+  const mo=e=>{const d=new Date(e.t); return [d.getFullYear()*100+d.getMonth(),d.toLocaleDateString(undefined,{month:"long",year:"numeric"})];};
+  const sec=(title,groups,showStores)=>`<details class="hx"><summary><span>${title}</span><b>${groups.length}</b></summary>`+groups.map(g=>groupHtml(g.label,g.es,showStores)).join("")+`</details>`;
+  const all=agg(H), newest=(a,b)=>b.k-a.k;
+  el.innerHTML=`<h2 class="cat">History</h2>`
+    +sec("Store totals",by(e=>[e.sid,storeName(e)]).sort((a,b)=>agg(b.es).total-agg(a.es).total),false)
+    +sec("Weekly totals",by(wk).sort(newest),true)
+    +sec("Monthly totals",by(mo).sort(newest),true)
+    +`<details class="hx"><summary><span>Each product</span><b>${all.total}</b></summary>${prodRows(all.items)}</details>`
+    +`<div class="actions foot"><button id="clearhist" class="btn">Clear history</button></div>`;
+  armButton(document.getElementById("clearhist"),"Clear history","Tap again to clear history",()=>{store.history=[];save();renderHistory();toast("History cleared");});
+}
+
+// Home page pictures
+{document.querySelectorAll(".owlogo").forEach(ow=>{if(IMG.ow) ow.src=IMG.ow; else ow.hidden=true;});
+ const pics=ks=>ks.map(k=>IMG[k]).filter(Boolean).map(s=>`<img src="${s}" alt="">`).join("");
+ document.getElementById("art-back").innerHTML=pics(["p:miller","p:coors","p:white-claw-black-cherry"]);
+ document.getElementById("art-truck").innerHTML=pics(["p:white-claw-vp1","p:truly-berry","p:twisted-tea-party-pack"]);
+ const row=pics(["p:miller","p:coors","p:labatt-blue","p:white-claw-black-cherry","p:corona-extra","p:twisted-tea-original","p:yuengling-traditional","p:modelo","p:truly-strawberry-lemonade","p:guinness-draught","p:high-life","p:surfside-iced-tea","p:heineken","p:pbr","p:mike-s-original","p:blue-moon-white","p:athletic-run-wild","p:sun-cruiser-iced-tea-vodka","p:banquet","p:angry-orchard","p:sierra-nevada-hazy-ipa","p:super-lyte"]);
+ const shelf=document.getElementById("shelf"); if(row) shelf.innerHTML=`<div class="shelf-track">${row}${row}</div>`; else shelf.hidden=true;}
+// Start: signed in with a finished profile goes home; otherwise sign in or finish the profile
+if(acct()){ if(acct().name&&acct().last) showScreen("home"); else openProfile(); } else showScreen("auth");
+</script>
+
+</body>
+</html>
