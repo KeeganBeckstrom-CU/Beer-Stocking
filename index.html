@@ -1,10 +1,13 @@
 <!doctype html>
+<!-- Beer Stocking. Copyright (c) 2026 Keegan Beckstrom. All rights reserved. Not licensed for copying, modification or reuse. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="Check the floor, count what's needed and build a pull list for Backstock and Truck Day.">
+<meta name="author" content="Keegan Beckstrom">
+<meta name="copyright" content="Copyright (c) 2026 Keegan Beckstrom. All rights reserved.">
 <meta name="theme-color" content="#1b3a8f">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
@@ -131,6 +134,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .hr b{font-variant-numeric:tabular-nums}
 .toast .undo{margin-left:12px;font:700 14px var(--body);color:var(--accent);background:transparent;border:1.5px solid currentColor;border-radius:6px;padding:4px 12px;cursor:pointer}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.copyright{margin:18px 0 0;text-align:center;font-size:12px;color:var(--muted)}
 .cheers{background:var(--done);color:var(--head-ink);border-radius:10px;padding:12px 14px;font-weight:600;margin-top:12px}
 h1,.sheet h2{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.02em;margin:0;text-transform:uppercase}
 #date{font-size:13px;opacity:.75}
@@ -239,6 +243,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <div id="history"></div>
     <div class="actions foot"><button id="editname" class="btn">Change name</button>
     </div>
+    <p class="copyright">© 2026 Keegan Beckstrom. All rights reserved.</p>
   </main>
 </div>
 
@@ -311,6 +316,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <script src="beer-img.js"></script>
 
 <script>
+/* Beer Stocking. Copyright (c) 2026 Keegan Beckstrom. All rights reserved. Not licensed for copying, modification or reuse. */
 // Every item from past order lists and the back-stock sheet. Format: Brand = flavor @ size, ...
 const CATALOG_TXT = `
 Domestics
