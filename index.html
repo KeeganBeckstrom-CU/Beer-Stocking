@@ -153,6 +153,25 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .toast .undo{margin-left:12px;font:700 14px var(--body);color:var(--accent);background:transparent;border:1.5px solid currentColor;border-radius:6px;padding:4px 12px;cursor:pointer}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .copyright{margin:18px 0 0;text-align:center;font-size:12px;color:var(--muted)}
+.seg{display:flex;gap:4px;background:var(--line);border-radius:10px;padding:4px}
+.seg button{flex:1;font:600 15px var(--body);padding:10px;border:0;border-radius:8px;background:transparent;color:var(--ink);cursor:pointer}
+.seg button[aria-selected="true"]{background:var(--head);color:var(--accent)}
+.linkbtn{font:600 13px var(--body);color:var(--head);background:transparent;border:1px dashed color-mix(in srgb,var(--head) 45%,transparent);border-radius:8px;padding:6px 10px;cursor:pointer}
+.reportbtn{margin-top:14px}
+.copyform{display:flex;align-items:end;gap:10px;margin:0 0 10px}.copyform .field{flex:1}.copyform .btn{flex:none}
+.titlerow .date{flex:none;color:var(--head-ink);opacity:.8;font-size:14px}
+.rsum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.rsum div{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.rsum b{display:block;font-family:var(--display);font-size:28px;color:var(--danger)}
+.rsum span{font-size:12px;color:var(--muted)}
+.rst{display:flex;align-items:center;gap:10px;padding:10px 12px;color:#fff;background:var(--sb,var(--head))}
+.rst b{font-family:var(--display);font-size:20px;text-transform:uppercase;letter-spacing:.02em}
+.rst .slogo{height:26px}.rst .slogo img{max-height:24px;max-width:80px}.rst .slogo.buschs img{max-height:28px}.rst .slogo em{font-size:16px}
+.rst span{margin-left:auto;font-size:13px;opacity:.9}
+.rr{display:flex;align-items:center;gap:10px;padding:8px 12px 8px 6px}.rr+.rr{border-top:1px solid var(--line)}
+.rr .nm{flex:1}.rr .need{flex-basis:100%}
+.rr .q{color:var(--danger)}
+#syncpill{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:30;font:600 12px var(--body);padding:6px 10px;border-radius:14px;background:var(--ink);color:#fff;opacity:.88;pointer-events:none}
 .cheers{background:var(--done);color:var(--head-ink);border-radius:10px;padding:12px 14px;font-weight:600;margin-top:12px}
 h1,.sheet h2{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.02em;margin:0;text-transform:uppercase}
 #date{font-size:13px;opacity:.75}
@@ -244,15 +263,21 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <div id="screen-auth" hidden>
   <header class="hero"><div class="wrap"><img class="owlogo" alt="O&amp;W, Inc."><h1>Beer Stocking</h1><p class="tag">Check it · Count it · Pull it</p></div></header>
   <main class="wrap">
-    <form id="nameform" class="form">
-      <h3>Who's stocking?</h3>
-      <div class="two">
+    <form id="authform" class="form" novalidate>
+      <div class="seg" role="tablist"><button type="button" id="am-in" role="tab" aria-selected="true">Sign in</button><button type="button" id="am-up" role="tab" aria-selected="false">Create account</button></div>
+      <h3 id="authtitle">Sign in</h3>
+      <div class="two" id="namewrap" hidden>
         <div class="field"><label for="pf">First name</label><input id="pf" autocomplete="given-name"></div>
         <div class="field"><label for="pl">Last name</label><input id="pl" autocomplete="family-name"></div>
       </div>
+      <div id="credwrap">
+        <div class="field"><label for="ae">Email</label><input id="ae" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false"></div>
+        <div class="field"><label for="ap">Password</label><input id="ap" type="password" autocomplete="current-password"></div>
+      </div>
       <p id="perr" class="err" hidden></p>
-      <button type="submit" class="btn primary">Continue</button>
-      <p class="hint">You only do this once. Your name, lists and history are saved on this phone.</p>
+      <button type="submit" id="asub" class="btn primary">Sign in</button>
+      <button type="button" id="acancel" class="btn" hidden>Cancel</button>
+      <p class="hint" id="authhint">Everyone signs in with their own account. Lists, counts, back stock and history are shared live between everyone's phones.</p>
     </form>
   </main>
 </div>
@@ -268,9 +293,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
       <button id="go-back" class="choice"><b>Backstock</b><span id="home-back-sub">Check the floor and pull from back stock</span><span class="art" id="art-back" aria-hidden="true"></span></button>
       <button id="go-truck" class="choice"><b>Truck Day</b><span id="home-truck-sub">Pick a store and work its truck list</span><span class="art" id="art-truck" aria-hidden="true"></span></button>
     </div>
+    <button id="go-report" class="btn wide reportbtn">Shortage report</button>
     <div id="history"></div>
-    <div class="actions foot"><button id="editname" class="btn">Change name</button>
-    </div>
+    <div class="actions foot"><button id="editname" class="btn">Change name</button><button id="signout" class="btn">Sign out</button></div>
+    <p class="hint" id="whoami"></p>
     <p class="copyright">© 2026 Keegan Beckstrom. All rights reserved.</p>
   </main>
 </div>
@@ -304,7 +330,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 
 <main class="wrap">
   <section id="view-fill">
-    <div class="actions"><button id="openadd" class="btn primary">+ Add item</button><button id="clearlist" class="btn">Clear list</button></div>
+    <div class="actions"><button id="openadd" class="btn primary">+ Add item</button><button id="openshelf" class="btn">Shelf amounts</button><button id="clearlist" class="btn">Clear list</button></div>
     <input id="search" type="search" placeholder="Find on list…" autocomplete="off">
     <div class="progress"><span id="prog">0 of 0 checked</span><div class="bar"><i id="progbar"></i></div></div>
     <p class="hint" id="fillhint"></p>
@@ -317,6 +343,28 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <div id="pull"></div>
     <textarea id="copyfallback" hidden readonly></textarea>
   </section>
+</main>
+</div>
+
+<div id="screen-shelf" hidden>
+<header class="top"><div class="wrap solo"><div class="titlerow"><button id="shelfback" class="backbtn">‹ Back</button><h1 id="shelftitle">Shelf amounts</h1><span class="date">Shelf</span></div></div></header>
+<main class="wrap">
+  <p class="hint">How many of each fit out on the floor at this store, end caps and displays included. Change them after a reset. Then on <b>Fill in</b>, just count what's on the shelf and the app works out what's needed.</p>
+  <div class="form copyform"><div class="field"><label for="shelfcopy">Copy shelf amounts from another store</label><select id="shelfcopy"></select></div><button id="shelfcopygo" class="btn">Copy</button></div>
+  <input id="shelfsearch" type="search" placeholder="Find an item…" autocomplete="off">
+  <p class="hint" id="shelfcount"></p>
+  <div id="shelflist"></div>
+</main>
+</div>
+
+<div id="screen-report" hidden>
+<header class="top"><div class="wrap solo"><div class="titlerow"><button id="reportback" class="backbtn">‹ Home</button><h1>Shortages</h1></div></div></header>
+<main class="wrap">
+  <p class="hint">Every time less went out than was needed, from finished pull lists.</p>
+  <div class="two"><div class="field"><label for="rrange">When</label><select id="rrange"><option value="week">This week</option><option value="lastweek">Last week</option><option value="30" selected>Last 30 days</option><option value="all">All time</option></select></div>
+  <div class="field"><label for="rstore">Store</label><select id="rstore"></select></div></div>
+  <div class="actions foot"><button id="rcopy" class="btn">Copy report</button></div>
+  <div id="report"></div>
 </main>
 </div>
 
@@ -341,6 +389,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   </div></div>
 </div>
 <div id="toast" class="toast" hidden></div>
+<script src="supabase.js"></script>
 <script src="beer-img.js"></script>
 
 <script>
@@ -634,6 +683,11 @@ delete store.accounts; delete store.session;
 if(!Array.isArray(store.history)) store.history=[];
 // inv: back stock on hand, by store then item: {n: how many, t: when it was counted}. Shaped to move to Supabase later (one row per store + item).
 if(!store.inv||typeof store.inv!=="object") store.inv={};
+// shelf: how many fit on the floor, by store then item (set on the Shelf amounts screen; changes with resets and end caps)
+if(!store.shelf||typeof store.shelf!=="object") store.shelf={};
+// Every finished pull list gets an id so it's only ever sent once
+const newId=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID():"10000000-1000-4000-8000-100000000000".replace(/[018]/g,c=>(c^Math.random()*16>>c/4).toString(16));
+store.history.forEach(e=>{if(!e.id) e.id=newId();});
 // The old single Backstock list now belongs to the first store
 if(store.lists.backstock){ if(store.stores[0]&&!store.lists["backstock:"+store.stores[0].id]) store.lists["backstock:"+store.stores[0].id]=store.lists.backstock; delete store.lists.backstock; }
 // Items whose pack changed: Super Lyte is an 8 can, Mike's Original and Black Cherry six-packs are cans
@@ -673,18 +727,19 @@ if(store.histV!==2){
 function getList(c){
   let l=store.lists[c];
   if(!l) l=store.lists[c]={list:(c.startsWith("backstock")?[]:TRUCK).slice(),qty:{},done:{},seen:{},note:{}};
-  ["qty","done","seen","note","out"].forEach(k=>{l[k]=l[k]||{}; for(const o in ID_RENAME) if(o in l[k]){l[k][ID_RENAME[o]]=l[k][o]; delete l[k][o];}});
+  ["qty","done","seen","note","out","floor"].forEach(k=>{l[k]=l[k]||{}; for(const o in ID_RENAME) if(o in l[k]){l[k][ID_RENAME[o]]=l[k][o]; delete l[k][o];}});
   l.list=[...new Set((l.list||[]).map(id=>ID_RENAME[id]||id))].filter(id=>byId[id]);
   return l;
 }
-let ctx="", mode="truck", state={list:[],qty:{},done:{},seen:{},note:{},out:{}};
+let ctx="", mode="truck", state={list:[],qty:{},done:{},seen:{},note:{},out:{},floor:{}};
 const curSid=()=>ctx.slice(ctx.indexOf(":")+1), isBack=()=>ctx.startsWith("backstock:");
 // How many are in the back at this store (null = not counted yet)
 const invOf=id=>{const s=store.inv[curSid()]; return s&&s[id]?s[id].n:null;};
 // How many actually went out: what was typed on the pull list, otherwise what's needed (capped at what's in the back)
 const outOf=id=>{if(id in state.out) return state.out[id]; const need=state.qty[id]||0, b=isBack()?invOf(id):null; return b==null?need:Math.min(need,b);};
 const prefix=()=>mode==="truck"?"store:":"backstock:";
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}};
+// save() keeps this phone's copy; onSave (sync.js) sends the changes to everyone else
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){} if(window.onSave) window.onSave();};
 const full=it=>it.flavor?it.brand+" "+it.flavor:it.brand;
 // All non-alcoholic items show as one group; every other item groups under its brand
 const NA="Non-Alcoholic";
@@ -771,7 +826,26 @@ function rowHtml(it){
   return `<div class="row${n?" has":""}${c?" checked":""}" data-id="${it.id}">
     <button class="ck" aria-pressed="${c}" aria-label="Checked ${esc(full(it))} ${it.size} on the floor"><span class="box">${c?"✓":""}</span></button>
     ${thumb(it)}<div class="nm"><span class="lbl">${esc(lbl(it))}</span>${chipHtml(it)}${noteHtml(it)}</div>
-    <div class="step"><button data-d="-1" aria-label="Less ${esc(full(it))}">−</button><input id="q-${it.id}" inputmode="numeric" pattern="[0-9]*" value="${n||""}" placeholder="0" aria-label="${esc(full(it))} ${esc(it.size)} needed"><button data-d="1" aria-label="More ${esc(full(it))}">+</button></div>${isBack()?inbackHtml(it):""}</div>`;
+    <div class="step"><button data-d="-1" aria-label="Less ${esc(full(it))}">−</button><input id="q-${it.id}" inputmode="numeric" pattern="[0-9]*" value="${n||""}" placeholder="0" aria-label="${esc(full(it))} ${esc(it.size)} needed"><button data-d="1" aria-label="More ${esc(full(it))}">+</button></div>${shelfHtml(it)}${isBack()?inbackHtml(it):""}</div>`;
+}
+// How many fit on the shelf here (null = not set yet)
+const capOf=id=>{const s=store.shelf[curSid()]; return s&&s[id]!=null?s[id]:null;};
+function shelfHtml(it){
+  const cap=capOf(it.id);
+  if(cap==null) return `<div class="inback"><button class="linkbtn" data-shelf="${esc(it.id)}">Set how many fit on the shelf</button></div>`;
+  const f=state.floor[it.id];
+  return `<div class="inback"><span>On the shelf now · holds ${cap}</span><div class="step sm"><button data-f="-1" aria-label="Fewer ${esc(full(it))} on the shelf">−</button><input data-floor inputmode="numeric" pattern="[0-9]*" value="${f==null?"":f}" placeholder="–" aria-label="${esc(full(it))} ${esc(it.size)} on the shelf now"><button data-f="1" aria-label="More ${esc(full(it))} on the shelf">+</button></div></div>`;
+}
+// Counting what's on the shelf works out the need: holds minus what's there
+function setFloor(id,v){
+  if(v===""||v==null) delete state.floor[id]; else state.floor[id]=Math.max(0,Math.min(999,v|0));
+  const cap=capOf(id);
+  if(cap!=null&&id in state.floor) setQty(id,Math.max(0,cap-state.floor[id]));
+  if(id in state.floor) state.seen[id]=true;
+  save();
+  const row=$fill.querySelector(`.row[data-id="${id}"]`);
+  if(row){const inp=row.querySelector("input[data-floor]"); if(inp&&document.activeElement!==inp) inp.value=id in state.floor?state.floor[id]:""; syncCheck(row,!!state.seen[id]);}
+  updateBrand(grpOf(byId[id])); updateTotals();
 }
 function inbackHtml(it){
   const b=invOf(it.id);
@@ -815,20 +889,25 @@ function syncCheck(row,c){row.classList.toggle("checked",c);const b=row.querySel
 $fill.addEventListener("click",e=>{
   const ck=e.target.closest(".ck");
   if(ck){const row=ck.closest(".row"),id=row.dataset.id; if(state.seen[id]) delete state.seen[id]; else state.seen[id]=true; save(); syncCheck(row,!!state.seen[id]); updateBrand(grpOf(byId[id])); updateTotals(); return;}
+  const sb_=e.target.closest("[data-shelf]"); if(sb_){openShelf(full(byId[sb_.dataset.shelf])+" "+byId[sb_.dataset.shelf].size);return;}
+  const fb=e.target.closest("button[data-f]");
+  if(fb){const id=fb.closest(".row").dataset.id; setFloor(id,Math.max(0,(state.floor[id]||0)+Number(fb.dataset.f)));return;}
   const ib=e.target.closest("button[data-i]");
   if(ib){const id=ib.closest(".row").dataset.id; setInv(id,Math.max(0,(invOf(id)||0)+Number(ib.dataset.i)));return;}
   const btn=e.target.closest("button[data-d]"); if(!btn) return;
   const id=btn.closest(".row").dataset.id; setQty(id,(state.qty[id]||0)+Number(btn.dataset.d));
 });
 $fill.addEventListener("input",e=>{if(e.target.tagName!=="INPUT") return; const id=e.target.closest(".row").dataset.id;
-  if(e.target.hasAttribute("data-inv")){const v=e.target.value.trim(); setInv(id,v===""?"":parseInt(v,10)||0);} else setQty(id,parseInt(e.target.value,10)||0);});
+  if(e.target.hasAttribute("data-inv")){const v=e.target.value.trim(); setInv(id,v===""?"":parseInt(v,10)||0);}
+  else if(e.target.hasAttribute("data-floor")){const v=e.target.value.trim(); setFloor(id,v===""?"":parseInt(v,10)||0);}
+  else setQty(id,parseInt(e.target.value,10)||0);});
 $fill.addEventListener("focusin",e=>{if(e.target.tagName==="INPUT") e.target.select();});
 $search.addEventListener("input",renderFill);
 // One tap clears the whole list right away; Undo brings it back
 document.getElementById("clearlist").addEventListener("click",()=>{
   if(!state.list.length){toast("The list is already empty");return;}
   const snap=JSON.stringify(state), st=state;
-  state.list=[];state.qty={};state.done={};state.seen={};state.note={};state.out={};save();$search.value="";renderFill();
+  state.list=[];state.qty={};state.done={};state.seen={};state.note={};state.out={};state.floor={};save();$search.value="";renderFill();
   toast("List cleared",()=>{Object.assign(st,JSON.parse(snap));save();if(state===st) renderFill();});
 });
 
@@ -890,7 +969,7 @@ document.getElementById("copy").addEventListener("click",()=>{
   try{navigator.clipboard.writeText(txt).then(()=>{fb.hidden=true;toast("Copied. Paste it in a text");},fallback);}catch(e){fallback();}
 });
 armButton(document.getElementById("clearcounts"),"Clear counts","Tap again to clear counts",()=>{
-  state.qty={};state.done={};state.seen={};state.note={};state.out={};save();renderFill();renderPull();toast("Counts and checks cleared");
+  state.qty={};state.done={};state.seen={};state.note={};state.out={};state.floor={};save();renderFill();renderPull();toast("Counts and checks cleared");
 });
 
 /* ---------- Add sheet ---------- */
@@ -917,7 +996,7 @@ function renderResults(){
 $as.addEventListener("input",renderResults);
 $res.addEventListener("click",e=>{
   const b=e.target.closest(".res"); if(!b) return; const id=b.dataset.id, it=byId[id];
-  if(onList(id)){state.list=state.list.filter(x=>x!==id);delete state.qty[id];delete state.done[id];delete state.seen[id];delete state.note[id];delete state.out[id];toast("Removed "+full(it));}
+  if(onList(id)){state.list=state.list.filter(x=>x!==id);delete state.qty[id];delete state.done[id];delete state.seen[id];delete state.note[id];delete state.out[id];delete state.floor[id];toast("Removed "+full(it));}
   else{state.list.push(id);toast("Added "+full(it)+" ("+it.size+")");}
   save();renderResults();updateTotals();
 });
@@ -960,8 +1039,8 @@ document.getElementById("tab-pull").addEventListener("click",()=>show("pull"));
 
 /* ---------- Screens: home, Truck Day stores, list ---------- */
 function showScreen(name){
-  ["auth","home","stores","list"].forEach(s=>{document.getElementById("screen-"+s).hidden=s!==name;});
-  if(name!=="list") brandOn(null);
+  ["auth","home","stores","list","shelf","report"].forEach(s=>{document.getElementById("screen-"+s).hidden=s!==name;});
+  if(name!=="list"&&name!=="shelf") brandOn(null);
   if(name==="home") renderHome();
   if(name==="stores") renderStores();
   window.scrollTo(0,0);
@@ -993,8 +1072,8 @@ function openList(c){
   brandOn(st);
   document.getElementById("date").textContent=truck?"Truck Day":"Backstock";
   document.getElementById("fillhint").textContent=truck
-    ?"Tap + for how many of each can go out on the floor. Tick the box once you've checked it. Everything saves on this phone."
-    :"Tick the box once you've looked at it on the floor. Tap + for how many you need, and put how many are in back stock under it. Everything saves on this phone.";
+    ?"Count what's on the shelf and the app works out how many go out (set Shelf amounts first), or tap + for how many. Tick the box once you've checked it. Everyone on the team sees the same list."
+    :"Count what's on the shelf and the app works out what's needed (set Shelf amounts first), or tap + for how many. Put how many are in back stock under it. Everyone on the team sees the same list.";
   $search.value=""; document.getElementById("copyfallback").hidden=true;
   showScreen("list"); show("fill"); renderFill();
 }
@@ -1052,18 +1131,101 @@ document.getElementById("go-truck").addEventListener("click",()=>showStores("tru
 document.getElementById("storesback").addEventListener("click",()=>showScreen("home"));
 document.getElementById("listback").addEventListener("click",()=>showStores(ctx.startsWith("store:")?"truck":"backstock"));
 
-/* ---------- Name: asked once the first time the app opens, then remembered on this phone ---------- */
-function openName(){
-  document.getElementById("pf").value=(store.me&&store.me.first)||""; document.getElementById("pl").value=(store.me&&store.me.last)||"";
-  document.getElementById("perr").hidden=true; showScreen("auth");
+/* ---------- Shelf amounts: how many fit on the floor for every item at one store, all editable at once ---------- */
+let shelfSid="";
+const $shelfList=document.getElementById("shelflist"), $shelfSearch=document.getElementById("shelfsearch");
+function openShelf(q){
+  shelfSid=curSid(); const st=store.stores.find(s=>s.id===shelfSid);
+  document.getElementById("shelftitle").innerHTML=(st&&st.chain&&CHAINS[st.chain]?`<i class="slogo tl ${st.chain}" aria-hidden="true">${chainLogo(st.chain)}</i>`:"")+`<span>${esc(st?(st.town||st.name):"Store")}${st&&st.num?` <small>#${esc(st.num)}</small>`:""}</span>`;
+  brandOn(st);
+  document.getElementById("shelfcopy").innerHTML=`<option value="">Pick a store…</option>`+store.stores.filter(s=>s.id!==shelfSid).map(s=>{const n=Object.keys(store.shelf[s.id]||{}).length; return `<option value="${esc(s.id)}"${n?"":" disabled"}>${esc(storeLabel(s))}${n?` (${n} set)`:" (none set)"}</option>`;}).join("");
+  $shelfSearch.value=q||""; showScreen("shelf"); renderShelf();
 }
-document.getElementById("nameform").addEventListener("submit",e=>{
-  e.preventDefault();
-  const err=document.getElementById("perr"), first=document.getElementById("pf").value.trim(), last=document.getElementById("pl").value.trim();
-  if(!first||!last){err.textContent="Type your first and last name.";err.hidden=false;return;}
-  store.me={first,last}; save(); showScreen("home");
+function renderShelf(){
+  const q=$shelfSearch.value.trim().toLowerCase().replace(/'/g,""), caps=store.shelf[shelfSid]||{};
+  const its=catalog.filter(it=>!q||matches(it,q));
+  let html="";
+  for(const [cat,g,list] of grouped(its)){
+    if(cat) html+=`<h2 class="cat">${cat}</h2>`;
+    html+=`<div class="brand"><div class="bh">${headHtml(g)}</div>`+list.map(it=>`<div class="row" data-id="${it.id}">${thumb(it)}<div class="nm"><span class="lbl">${esc(lbl(it))}</span>${chipHtml(it)}</div><div class="outw"><span>Holds</span><div class="step sm"><button data-c="-1" aria-label="Less room for ${esc(full(it))}">−</button><input data-cap inputmode="numeric" pattern="[0-9]*" value="${caps[it.id]??""}" placeholder="–" aria-label="${esc(full(it))} ${esc(it.size)} fits on the shelf"><button data-c="1" aria-label="More room for ${esc(full(it))}">+</button></div></div></div>`).join("")+`</div>`;
+  }
+  $shelfList.innerHTML=html||`<div class="empty">Nothing matches “${esc(q)}”.</div>`;
+  shelfCount();
+}
+function shelfCount(){const n=Object.keys(store.shelf[shelfSid]||{}).length; document.getElementById("shelfcount").textContent=n?`${n} item${n===1?"":"s"} have a shelf amount at this store.`:"No shelf amounts set at this store yet.";}
+function setCap(id,v){
+  const s=store.shelf[shelfSid]=store.shelf[shelfSid]||{};
+  if(v===""||v==null) delete s[id]; else s[id]=Math.max(0,Math.min(999,v|0));
+  save();
+  const inp=$shelfList.querySelector(`.row[data-id="${id}"] input[data-cap]`); if(inp&&document.activeElement!==inp) inp.value=s[id]??"";
+  shelfCount();
+}
+$shelfList.addEventListener("click",e=>{const b=e.target.closest("button[data-c]"); if(!b) return; const id=b.closest(".row").dataset.id, cur=(store.shelf[shelfSid]||{})[id]; setCap(id,Math.max(0,(cur||0)+Number(b.dataset.c)));});
+$shelfList.addEventListener("input",e=>{if(!e.target.hasAttribute("data-cap")) return; const v=e.target.value.trim(); setCap(e.target.closest(".row").dataset.id,v===""?"":parseInt(v,10)||0);});
+$shelfList.addEventListener("focusin",e=>{if(e.target.tagName==="INPUT") e.target.select();});
+$shelfSearch.addEventListener("input",renderShelf);
+armButton(document.getElementById("shelfcopygo"),"Copy","Tap again to copy",()=>{
+  const from=document.getElementById("shelfcopy").value; if(!from){toast("Pick a store to copy from");return;}
+  const src=store.shelf[from]||{}; store.shelf[shelfSid]=Object.assign({},store.shelf[shelfSid]||{},src); save(); renderShelf();
+  toast(`Copied ${Object.keys(src).length} shelf amounts`);
 });
-document.getElementById("editname").addEventListener("click",openName);
+document.getElementById("openshelf").addEventListener("click",()=>openShelf(""));
+document.getElementById("shelfback").addEventListener("click",()=>{openList(ctx);});
+
+/* ---------- Shortage report: every time less went out than was needed ---------- */
+function rangeStart(v){
+  const d=new Date(); d.setHours(0,0,0,0); const mon=new Date(d); mon.setDate(d.getDate()-((d.getDay()+6)%7));
+  if(v==="week") return [mon.getTime(),Infinity];
+  if(v==="lastweek"){const a=new Date(mon); a.setDate(a.getDate()-7); return [a.getTime(),mon.getTime()];}
+  if(v==="30") return [d.getTime()-29*864e5,Infinity];
+  return [0,Infinity];
+}
+function shortData(){
+  const [a,b]=rangeStart(document.getElementById("rrange").value), sid=document.getElementById("rstore").value;
+  const per={}, prod={}; let lines=0, units=0, pulls=0;
+  for(const e of store.history){
+    if(e.t<a||e.t>=b||(sid&&e.sid!==sid)||!e.need) continue; pulls++;
+    for(const id in e.need){const need=e.need[id]|0, out=(e.items&&e.items[id])|0, sh=need-out; if(sh<=0) continue;
+      lines++; units+=sh;
+      const s=per[e.sid]=per[e.sid]||{sid:e.sid,name:storeName(e),units:0,items:{}}; s.units+=sh;
+      const r=s.items[id]=s.items[id]||{short:0,need:0,out:0,times:0}; r.short+=sh; r.need+=need; r.out+=out; r.times++;
+      const p=prod[id]=prod[id]||{short:0,times:0,stores:new Set()}; p.short+=sh; p.times++; p.stores.add(e.sid);}
+  }
+  return {per:Object.values(per).sort((x,y)=>y.units-x.units),prod,lines,units,pulls};
+}
+function renderReport(){
+  const d=shortData(), el=document.getElementById("report");
+  if(!d.lines){el.innerHTML=`<div class="empty">No shortages${d.pulls?` in ${d.pulls} finished pull list${d.pulls===1?"":"s"}`:""} for this time. When "Put out" is less than "Need" on a pull list, it shows up here after you finish it.</div>`;return;}
+  const row=(id,r,extra)=>{const it=byId[id]; return `<div class="rr">${it?thumb(it):""}<span class="nm"><span class="lbl">${esc(it?full(it):id)}</span>${it?chipHtml(it):""}<span class="need">${extra}</span></span><span class="q">−${r.short}</span></div>`;};
+  let html=`<div class="rsum"><div><b>${d.units}</b><span>short</span></div><div><b>${d.lines}</b><span>line${d.lines===1?"":"s"} short</span></div><div><b>${d.per.length}</b><span>store${d.per.length===1?"":"s"}</span></div></div>`;
+  for(const s of d.per){
+    const st=store.stores.find(x=>x.id===s.sid), c=st&&st.chain&&CHAINS[st.chain];
+    html+=`<div class="brand"><div class="rst" style="${c?`--sb:${c.bg}`:""}">${c?`<i class="slogo ${st.chain}" aria-hidden="true">${chainLogo(st.chain)}</i>`:""}<b>${esc(st?(c?(st.town||st.name):st.name):s.name)}${st&&st.num?` #${esc(st.num)}`:""}</b><span>${s.units} short</span></div>`
+      +Object.entries(s.items).sort((x,y)=>y[1].short-x[1].short).map(([id,r])=>row(id,r,`Needed ${r.need} · put out ${r.out}${r.times>1?` · short ${r.times} times`:""}`)).join("")+`</div>`;
+  }
+  const top=Object.entries(d.prod).sort((x,y)=>y[1].short-x[1].short).slice(0,15);
+  if(d.per.length>1) html+=`<h2 class="cat">Most short, all stores</h2><div class="brand">`+top.map(([id,p])=>row(id,p,`${p.times} time${p.times===1?"":"s"} at ${p.stores.size} store${p.stores.size===1?"":"s"}`)).join("")+`</div>`;
+  el.innerHTML=html;
+}
+function reportText(){
+  const d=shortData(), rs=document.getElementById("rrange"), lab=rs.options[rs.selectedIndex].text;
+  let t=`SHORTAGE REPORT · ${lab.toUpperCase()}\n${d.units} short across ${d.lines} line${d.lines===1?"":"s"}\n`;
+  for(const s of d.per){const st=store.stores.find(x=>x.id===s.sid); t+=`\n${(st?storeLabel(st):s.name).toUpperCase()} (${s.units} short)\n`+Object.entries(s.items).sort((x,y)=>y[1].short-x[1].short).map(([id,r])=>`- ${byId[id]?full(byId[id])+" "+byId[id].size:id}: short ${r.short} (needed ${r.need}, out ${r.out})`).join("\n")+"\n";}
+  return t.trim();
+}
+function openReport(){
+  const sel=document.getElementById("rstore"), keep=sel.value;
+  sel.innerHTML=`<option value="">All stores</option>`+store.stores.map(s=>`<option value="${esc(s.id)}">${esc(storeLabel(s))}</option>`).join(""); sel.value=keep;
+  showScreen("report"); renderReport();
+}
+document.getElementById("go-report").addEventListener("click",openReport);
+document.getElementById("reportback").addEventListener("click",()=>showScreen("home"));
+document.getElementById("rrange").addEventListener("change",renderReport);
+document.getElementById("rstore").addEventListener("change",renderReport);
+document.getElementById("rcopy").addEventListener("click",()=>{
+  if(!shortData().lines){toast("No shortages to copy");return;}
+  const txt=reportText(); try{navigator.clipboard.writeText(txt).then(()=>toast("Report copied. Paste it in a text or email"),()=>toast("Couldn't copy on this phone"));}catch(e){toast("Couldn't copy on this phone");}
+});
 
 /* ---------- History: every "Finish & save" on a pull list, totalled by store, week, month and product ---------- */
 armButton(document.getElementById("finish"),"Finish & save to history","Tap again to save and clear counts",()=>{
@@ -1073,9 +1235,9 @@ armButton(document.getElementById("finish"),"Finish & save to history","Tap agai
   list.forEach(it=>{const o=outOf(it.id); need[it.id]=state.qty[it.id]; if(o>0) items[it.id]=o;
     // What went out of the back comes off this store's back stock
     if(back&&o>0&&invOf(it.id)!=null){store.inv[sid][it.id]={n:Math.max(0,invOf(it.id)-o),t:Date.now()};took++;}});
-  store.history.push({t:Date.now(),sid,sname:st?st.name:"Store",kind:back?"backstock":"truck",user:store.me?store.me.first+" "+store.me.last:"",items,need});
+  store.history.push({id:newId(),t:Date.now(),sid,sname:st?st.name:"Store",kind:back?"backstock":"truck",user:store.me?store.me.first+" "+store.me.last:"",items,need});
   if(store.history.length>600) store.history=store.history.slice(-600);
-  state.qty={};state.done={};state.seen={};state.note={};state.out={};save();renderFill();renderPull();toast("Saved what went out to history."+(took?" Back stock updated.":"")+" Counts cleared.");
+  state.qty={};state.done={};state.seen={};state.note={};state.out={};state.floor={};save();renderFill();renderPull();toast("Saved what went out to history."+(took?" Back stock updated.":"")+" Counts cleared.");
 });
 function agg(es){
   const o={total:0,items:{},stores:{}};
@@ -1105,8 +1267,7 @@ function renderHistory(){
     +sec("Weekly totals",by(wk).sort(newest),true)
     +sec("Monthly totals",by(mo).sort(newest),true)
     +`<details class="hx"><summary><span>Each product</span><b>${all.total}</b></summary>${prodRows(all.items)}</details>`
-    +`<div class="actions foot"><button id="clearhist" class="btn">Clear history</button></div>`;
-  armButton(document.getElementById("clearhist"),"Clear history","Tap again to clear history",()=>{store.history=[];save();renderHistory();toast("History cleared");});
+    ;
 }
 
 // Home page pictures
@@ -1116,9 +1277,9 @@ function renderHistory(){
  document.getElementById("art-truck").innerHTML=pics(["p:white-claw-vp1","p:truly-berry","p:twisted-tea-party-pack"]);
  const row=pics(["p:miller","p:coors","p:labatt-blue","p:white-claw-black-cherry","p:corona-extra","p:twisted-tea-original","p:yuengling-traditional","p:modelo","p:truly-strawberry-lemonade","p:guinness-draught","p:high-life","p:surfside-iced-tea","p:heineken","p:pbr","p:mike-s-original","p:blue-moon-white","p:athletic-run-wild","p:sun-cruiser-iced-tea-vodka","p:banquet","p:angry-orchard","p:sierra-nevada-hazy-ipa","p:super-lyte"]);
  const shelf=document.getElementById("shelf"); if(row) shelf.innerHTML=`<div class="shelf-track">${row}${row}</div>`; else shelf.hidden=true;}
-// Start: a phone that already has a first and last name goes straight home; otherwise ask once
-if(store.me&&store.me.first&&store.me.last) showScreen("home"); else openName();
+// Start-up (sign in, then load the team's shared data) is in sync.js
 </script>
+<script src="sync.js"></script>
 
 </body>
 </html>
