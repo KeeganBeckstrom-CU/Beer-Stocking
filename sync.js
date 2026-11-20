@@ -17,7 +17,7 @@ const int=v=>v==null||v===""?null:(v|0);
 const N={ // one shape per table, so a row from this phone and the same row from Supabase compare equal
   stores:r=>({id:r.id,name:r.name||"",chain:r.chain||null,town:r.town||null,num:r.num||null,county:r.county||null,pos:r.pos|0}),
   routes:r=>({id:r.id,name:r.name||"",county:r.county||null,store_ids:Array.isArray(r.store_ids)?r.store_ids.slice():[],pos:r.pos|0}),
-  schedule:r=>({id:r.id,user_id:r.user_id,route_id:r.route_id,day:r.day|0,kind:r.kind==="truck"?"truck":"backstock"}),
+  schedule:r=>({id:r.id,user_id:r.user_id,route_id:r.route_id,day:r.day|0,kind:r.kind==="truck"?"truck":"backstock",week:r.week?String(r.week).slice(0,10):null}),
   custom_items:r=>({id:r.id,brand:r.brand,flavor:r.flavor||"",size:r.size}),
   list_items:r=>({store_id:r.store_id,kind:r.kind,item_id:r.item_id,pos:r.pos|0,qty:r.qty|0,floor:int(r.floor),seen:!!r.seen,done:!!r.done,out:int(r.out),note:r.note||null}),
   shelf:r=>({store_id:r.store_id,item_id:r.item_id,cap:r.cap|0}),
@@ -52,7 +52,7 @@ function listOf(sid,kind){const c=prefOf(kind)+sid; return store.lists[c]||(stor
 function applyRow(t,r){
   if(t==="routes"){const o={id:r.id,name:r.name,county:r.county||undefined,store_ids:(r.store_ids||[]).slice(),pos:r.pos}, i=store.routes.findIndex(x=>x.id===r.id);
     if(i<0) store.routes.push(o); else store.routes[i]=o; store.routes.sort((a,b)=>(a.pos??0)-(b.pos??0));}
-  else if(t==="schedule"){const o={id:r.id,user_id:r.user_id,route_id:r.route_id,day:r.day,kind:r.kind==="truck"?"truck":"backstock"}, i=store.schedule.findIndex(x=>x.id===r.id); if(i<0) store.schedule.push(o); else store.schedule[i]=o;}
+  else if(t==="schedule"){const o={id:r.id,user_id:r.user_id,route_id:r.route_id,day:r.day,kind:r.kind==="truck"?"truck":"backstock",week:r.week?String(r.week).slice(0,10):weekKey(new Date())}, i=store.schedule.findIndex(x=>x.id===r.id); if(i<0) store.schedule.push(o); else store.schedule[i]=o;}
   else if(t==="stores"){const o={id:r.id,name:r.name,chain:r.chain||undefined,town:r.town||undefined,num:r.num||undefined,county:r.county||undefined,pos:r.pos}, i=store.stores.findIndex(s=>s.id===r.id);
     if(i<0) store.stores.push(o); else store.stores[i]=Object.assign(store.stores[i],o);
     store.stores.sort((a,b)=>(a.pos??0)-(b.pos??0));}

@@ -192,6 +192,12 @@ select{max-width:100%;min-width:0;text-overflow:ellipsis}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .schip{font-size:13px;font-weight:600;padding:3px 9px;border-radius:12px;color:#fff;background:var(--sb,var(--head))}
 .formbtns{display:flex;gap:8px;flex-wrap:wrap}.formbtns .btn{flex:1}
+.weeknav{display:flex;align-items:center;gap:10px;margin:12px 0 10px}
+.weeknav>div{flex:1;text-align:center;display:grid}
+.weeknav b{font-family:var(--display);font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+.weeknav span{font-size:13px;color:var(--muted)}
+.weeknav .btn{flex:none;width:48px;padding:10px 0;font-size:22px;line-height:1}
+.dh small{font:500 13px var(--body);color:var(--muted);text-transform:none;letter-spacing:0;margin-left:6px}
 .cathead{display:flex;justify-content:space-between;align-items:end;gap:10px}.cathead .btn{flex:none;padding:9px 14px;margin-bottom:6px}
 .flabel{display:block;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .picks{display:flex;flex-wrap:wrap;gap:8px}
@@ -202,7 +208,7 @@ select{max-width:100%;min-width:0;text-overflow:ellipsis}
 .ktag.backstock{background:var(--done);color:#fff}.ktag.truck{background:var(--hot);color:#fff}
 .addasg .kind{flex:1 1 100%}
 .role{display:flex;align-items:center;gap:10px;padding:8px 12px}.role+.role{border-top:1px solid var(--line)}
-.role span{flex:1;min-width:0}.role select{flex:none;width:auto;font:16px var(--body);padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.role>span:first-child{flex:1;min-width:0}.role select{flex:none;width:auto;font:16px var(--body);padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
 body:not(.lead) .lead-only,body:not(.admin) .admin-only{display:none!important}
 body.demo #editname,body.demo #signout,body.demo #syncpill{display:none!important}
 #demobar{position:relative;z-index:40;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px max(12px,env(safe-area-inset-left,0px));padding-top:calc(8px + env(safe-area-inset-top,0px));background:#13235a;color:#fff7d6;font:600 14px var(--body)}
@@ -424,6 +430,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <main class="wrap">
   <p class="hint" id="schedhint">Who works which route on which day. Everyone sees the same schedule, and each person's route for today shows on their home screen.</p>
   <div class="two filters"><div class="field"><label for="scounty">County</label><select id="scounty"></select></div><div class="field"><label for="sperson">Person</label><select id="sperson"></select></div></div>
+  <div class="weeknav"><button id="wprev" class="btn" aria-label="Week before">‹</button><div><b id="wlabel"></b><span id="wsub"></span></div><button id="wnext" class="btn" aria-label="Week after">›</button></div>
+  <div class="actions lead-only"><button id="wthis" class="btn">This week</button><button id="wcopy" class="btn">Copy last week</button></div>
   <div id="week"></div>
   <div class="cathead"><h2 class="cat">Routes</h2><button id="newroute" class="btn lead-only">+ Add route</button></div>
   <p class="hint">A route is a group of stores worked together. Pick a route on the store list to see just its stores.</p>
@@ -771,6 +779,7 @@ if(!store.shelf||typeof store.shelf!=="object") store.shelf={};
 // routes: groups of stores; schedule: who works which route on which day (0 = Sunday); people: everyone with an account
 if(!Array.isArray(store.routes)) store.routes=[];
 if(!Array.isArray(store.schedule)) store.schedule=[];
+store.schedule.forEach(a=>{if(!a.week) a.week=weekKey(new Date());});
 if(!Array.isArray(store.people)) store.people=[];
 
 // Every finished pull list gets an id so it's only ever sent once
@@ -1241,9 +1250,13 @@ document.getElementById("listback").addEventListener("click",()=>showStores(ctx.
 const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const dayKey=t=>{const d=new Date(t); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();};
 const routeOf=id=>store.routes.find(r=>r.id===id);
+// Weeks start on Monday; a week is named by its Monday's date (YYYY-MM-DD, this phone's time zone)
+function mondayOf(d){const m=new Date(d); m.setHours(0,0,0,0); m.setDate(m.getDate()-((m.getDay()+6)%7)); return m;}
+function weekKey(d){const m=mondayOf(d), p=n=>String(n).padStart(2,"0"); return `${m.getFullYear()}-${p(m.getMonth()+1)}-${p(m.getDate())}`;} // a function declaration, so it works during start-up too
+function weekStart(k){const [y,mo,da]=k.split("-").map(Number); return new Date(y,mo-1,da);}
 const personName=id=>{const p=store.people.find(x=>x.id===id); if(p) return `${p.first} ${p.last}`.trim(); return id===store.owner&&store.me?`${store.me.first} ${store.me.last}`.trim():"Someone";};
 const countyList=()=>[...new Set([...COUNTIES,...store.stores.map(s=>s.county).filter(Boolean),...store.routes.map(r=>r.county).filter(Boolean)])];
-const myToday=()=>store.owner?store.schedule.filter(a=>a.user_id===store.owner&&a.day===new Date().getDay()&&routeOf(a.route_id)):[];
+const myToday=()=>store.owner?store.schedule.filter(a=>a.user_id===store.owner&&a.week===weekKey(new Date())&&a.day===new Date().getDay()&&routeOf(a.route_id)):[];
 const myRoutesToday=()=>[...new Set(myToday().map(a=>a.route_id))].map(routeOf);
 // The store-list filter is just for this phone
 const filt=()=>{store.filt=store.filt||{county:"",route:""}; return store.filt;};
@@ -1294,14 +1307,14 @@ document.getElementById("prevlog").addEventListener("click",e=>{
 
 /* ---------- Schedule: who works which route on which day; routes are groups of stores ----------
    Admin and managers set it up; employees see the same main schedule, read only (the database enforces this too) */
-let armedAsg=null, editRoute=null, pickIds=[];
+let armedAsg=null, editRoute=null, pickIds=[], schedWeek=weekKey(new Date());
 const isAdmin=()=>store.role==="admin"||(!store.owner&&!window.DEMO);
 const isLead=()=>isAdmin()||store.role==="manager";
 const KIND={backstock:"Backstock",truck:"Truck Day"};
 function roleClasses(){document.body.classList.toggle("lead",isLead()); document.body.classList.toggle("admin",isAdmin());}
 function openSched(){
   document.getElementById("scounty").innerHTML=countyOpts(document.getElementById("scounty").value||"",true);
-  showScreen("sched"); renderSched();
+  schedWeek=weekKey(new Date()); showScreen("sched"); renderSched();
 }
 function peopleList(){const ps=store.people.slice(); if(store.owner&&!ps.some(p=>p.id===store.owner)&&store.me) ps.unshift({id:store.owner,first:store.me.first,last:store.me.last,role:store.role}); return ps;}
 const pname=p=>`${p.first} ${p.last}`.trim();
@@ -1311,13 +1324,18 @@ function renderSched(){
   document.getElementById("schedtitle").textContent=lead?"Schedule":"Main schedule";
   document.getElementById("schedhint").textContent=lead?"Set who works which route on which day, and whether it's a Backstock day or a Truck Day. Everyone sees this schedule, and each person's route for today shows on their home screen.":"Everyone's routes for the week. Your route for today also shows on your home screen. Ask a manager to make changes.";
   sp.innerHTML=`<option value="">Everyone</option>`+ps.map(p=>`<option value="${esc(p.id)}"${p.id===pv?" selected":""}>${esc(pname(p))}</option>`).join("");
-  const p=sp.value, today=new Date().getDay(), rs=store.routes.filter(r=>!c||r.county===c);
+  const p=sp.value, thisWk=weekKey(new Date()), today=schedWeek===thisWk?new Date().getDay():-1, rs=store.routes.filter(r=>!c||r.county===c);
+  const mon=weekStart(schedWeek), sun=new Date(mon); sun.setDate(mon.getDate()+6), md=d=>{const x=new Date(mon); x.setDate(mon.getDate()+((d+6)%7)); return x;};
+  const fmt=x=>x.toLocaleDateString(undefined,{month:"short",day:"numeric"}), diff=Math.round((mon-weekStart(thisWk))/6048e5);
+  document.getElementById("wlabel").textContent=`${fmt(mon)} – ${fmt(sun)}`;
+  document.getElementById("wsub").textContent=diff===0?"This week":diff===1?"Next week":diff===-1?"Last week":diff>1?`${diff} weeks ahead`:`${-diff} weeks ago`;
+  const inWeek=store.schedule.filter(a=>a.week===schedWeek);
   document.getElementById("schedtoday").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"numeric",day:"numeric"});
   const canAdd=lead&&ps.length&&rs.length;
   let html=lead&&!canAdd?`<p class="hint">${!ps.length?"People show up here once they create an account.":"Add a route below first, then assign people to it."}</p>`:"";
   for(const d of [1,2,3,4,5,6,0]){
-    const as=store.schedule.filter(a=>a.day===d&&routeOf(a.route_id)&&(!p||a.user_id===p)&&(!c||routeOf(a.route_id).county===c));
-    html+=`<div class="day${d===today?" now":""}"><div class="dh"><b>${DAYS[d]}</b>${d===today?`<span class="pill">Today</span>`:""}</div>`
+    const as=inWeek.filter(a=>a.day===d&&routeOf(a.route_id)&&(!p||a.user_id===p)&&(!c||routeOf(a.route_id).county===c));
+    html+=`<div class="day${d===today?" now":""}"><div class="dh"><b>${DAYS[d]}<small>${fmt(md(d))}</small></b>${d===today?`<span class="pill">Today</span>`:""}</div>`
       +(as.length?as.map(a=>{const r=routeOf(a.route_id), k=a.kind==="truck"?"truck":"backstock"; return `<div class="asg"><span><b>${esc(personName(a.user_id))}</b><span class="ktag ${k}">${KIND[k]}</span><small>${esc(r.name)} · ${r.store_ids.length} store${r.store_ids.length===1?"":"s"}${r.county?` · ${esc(r.county)}`:""}</small></span>${lead?`<button class="x${armedAsg===a.id?" arm":""}" data-del="${esc(a.id)}">${armedAsg===a.id?"Tap again":"Remove"}</button>`:""}</div>`;}).join(""):`<div class="none">No one scheduled.</div>`)
       +(canAdd?`<div class="addasg"><select class="ap" aria-label="Person for ${DAYS[d]}">${ps.map(x=>`<option value="${esc(x.id)}"${x.id===p?" selected":""}>${esc(pname(x))}</option>`).join("")}</select><select class="ar" aria-label="Route for ${DAYS[d]}">${rs.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join("")}</select><select class="ak" aria-label="Backstock or Truck Day on ${DAYS[d]}"><option value="backstock">Backstock</option><option value="truck">Truck Day</option></select><button class="btn" data-add="${d}">Assign</button></div>`:"")+`</div>`;
   }
@@ -1344,14 +1362,26 @@ document.getElementById("week").addEventListener("click",e=>{
   if(!isLead()) return;
   const add=e.target.closest("[data-add]");
   if(add){const row=add.closest(".addasg"), d=+add.dataset.add, user_id=row.querySelector(".ap").value, route_id=row.querySelector(".ar").value, kind=row.querySelector(".ak").value;
-    if(store.schedule.some(a=>a.day===d&&a.user_id===user_id&&a.route_id===route_id&&(a.kind||"backstock")===kind)){toast("Already on the schedule");return;}
-    store.schedule.push({id:newId(),user_id,route_id,day:d,kind}); save(); renderSched(); toast(`${personName(user_id)} · ${routeOf(route_id).name} · ${KIND[kind]} on ${DAYS[d]}`);return;}
+    if(store.schedule.some(a=>a.week===schedWeek&&a.day===d&&a.user_id===user_id&&a.route_id===route_id&&(a.kind||"backstock")===kind)){toast("Already on the schedule");return;}
+    store.schedule.push({id:newId(),user_id,route_id,day:d,kind,week:schedWeek}); save(); renderSched(); toast(`${personName(user_id)} · ${routeOf(route_id).name} · ${KIND[kind]} on ${DAYS[d]}`);return;}
   const del=e.target.closest("[data-del]"); if(!del) return;
   const id=del.dataset.del;
   if(armedAsg!==id){armedAsg=id; renderSched(); clearTimeout(renderSched.h); renderSched.h=setTimeout(()=>{armedAsg=null; renderSched();},3000); return;}
   clearTimeout(renderSched.h); armedAsg=null; store.schedule=store.schedule.filter(a=>a.id!==id); save(); renderSched(); toast("Removed from the schedule");
 });
 document.getElementById("scounty").addEventListener("change",renderSched);
+const moveWeek=n=>{const m=weekStart(schedWeek); m.setDate(m.getDate()+7*n); schedWeek=weekKey(m); armedAsg=null; renderSched();};
+document.getElementById("wprev").addEventListener("click",()=>moveWeek(-1));
+document.getElementById("wnext").addEventListener("click",()=>moveWeek(1));
+document.getElementById("wthis").addEventListener("click",()=>{schedWeek=weekKey(new Date()); renderSched();});
+// Fill the shown week from the week before (adds what's missing; nothing already set is changed)
+document.getElementById("wcopy").addEventListener("click",()=>{
+  if(!isLead()) return;
+  const prev=weekStart(schedWeek); prev.setDate(prev.getDate()-7); const pk=weekKey(prev);
+  const src=store.schedule.filter(a=>a.week===pk&&routeOf(a.route_id)); if(!src.length){toast("Nothing on the schedule the week before");return;}
+  let n=0; src.forEach(a=>{if(!store.schedule.some(b=>b.week===schedWeek&&b.day===a.day&&b.user_id===a.user_id&&b.route_id===a.route_id&&b.kind===a.kind)){store.schedule.push({id:newId(),user_id:a.user_id,route_id:a.route_id,day:a.day,kind:a.kind,week:schedWeek}); n++;}});
+  save(); renderSched(); toast(n?`Copied ${n} from the week before`:"This week already has everything from the week before");
+});
 document.getElementById("sperson").addEventListener("change",renderSched);
 // Route editor: tap stores (in their chain colors) to put them on or take them off
 function renderPicks(county){
@@ -1552,7 +1582,8 @@ function buildSample(){
   S.owner="s-keegan"; S.me={first:"Keegan",last:"Beckstrom"}; S.role="admin";
   const N="sample-north", So="sample-south", plan={1:[["s-keegan",N,"backstock"],["s-tyler",So,"backstock"]],2:[["s-alex",N,"truck"],["s-tyler",So,"backstock"]],3:[["s-keegan",So,"backstock"],["s-alex",N,"backstock"]],4:[["s-tyler",N,"truck"],["s-keegan",So,"truck"]],5:[["s-keegan",N,"backstock"],["s-alex",So,"backstock"]],6:[["s-alex",N,"backstock"],["s-tyler",So,"truck"]],0:[["s-jordan",N,"backstock"]]};
   const today=new Date().getDay(); plan[today]=[["s-keegan",N,"backstock"],["s-tyler",So,"backstock"]]; // today: you on a Backstock day, to show the day-before list
-  S.schedule=[]; for(const d in plan) plan[d].forEach(([u,r,k],i)=>S.schedule.push({id:"s-"+d+"-"+i,user_id:u,route_id:r,day:+d,kind:k}));
+  const wk=weekKey(new Date()), nx=new Date(); nx.setDate(nx.getDate()+7); const wk2=weekKey(nx);
+  S.schedule=[]; for(const d in plan) plan[d].forEach(([u,r,k],i)=>{S.schedule.push({id:"s-"+d+"-"+i,user_id:u,route_id:r,day:+d,kind:k,week:wk}); if(+d>=1&&+d<=3) S.schedule.push({id:"s2-"+d+"-"+i,user_id:u,route_id:r,day:+d,kind:k,week:wk2});}); // next week partly set early
   const ITEMS=["miller-24","coors-24","labatt-blue-24","labatt-light-24","yuengling-traditional-24","white-claw-variety-24","white-claw-black-cherry-12-can","twisted-tea-original-12-can","modelo-12-can","corona-extra-12-btl","truly-berry-12-can","high-life-30"].filter(id=>byId[id]);
   S.stores.forEach(st=>{S.shelf[st.id]={}; S.inv[st.id]={}; ITEMS.forEach(id=>{S.shelf[st.id][id]=pick(6,14); if(rnd()<.8) S.inv[st.id][id]={n:pick(0,10),t:Date.now()-pick(1,40)*36e5};});});
   // Finished pull lists for the last 6 days, by whoever was on each route; some come up short
