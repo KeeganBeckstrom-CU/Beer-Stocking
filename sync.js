@@ -11,18 +11,20 @@ const sb=window.supabase&&window.supabase.createClient?window.supabase.createCli
 let user=null;
 
 /* ---------- Rows: what each table holds, built from this phone's copy ---------- */
-const TABLES=["stores","custom_items","list_items","shelf","back_stock","pulls"];
-const PK={stores:"id",custom_items:"id",list_items:"store_id,kind,item_id",shelf:"store_id,item_id",back_stock:"store_id,item_id",pulls:"id"};
+const TABLES=["stores","custom_items","routes","schedule","list_items","shelf","back_stock","pulls"];
+const PK={stores:"id",custom_items:"id",routes:"id",schedule:"id",list_items:"store_id,kind,item_id",shelf:"store_id,item_id",back_stock:"store_id,item_id",pulls:"id"};
 const int=v=>v==null||v===""?null:(v|0);
 const N={ // one shape per table, so a row from this phone and the same row from Supabase compare equal
-  stores:r=>({id:r.id,name:r.name||"",chain:r.chain||null,town:r.town||null,num:r.num||null,pos:r.pos|0}),
+  stores:r=>({id:r.id,name:r.name||"",chain:r.chain||null,town:r.town||null,num:r.num||null,county:r.county||null,pos:r.pos|0}),
+  routes:r=>({id:r.id,name:r.name||"",county:r.county||null,store_ids:Array.isArray(r.store_ids)?r.store_ids.slice():[],pos:r.pos|0}),
+  schedule:r=>({id:r.id,user_id:r.user_id,route_id:r.route_id,day:r.day|0}),
   custom_items:r=>({id:r.id,brand:r.brand,flavor:r.flavor||"",size:r.size}),
   list_items:r=>({store_id:r.store_id,kind:r.kind,item_id:r.item_id,pos:r.pos|0,qty:r.qty|0,floor:int(r.floor),seen:!!r.seen,done:!!r.done,out:int(r.out),note:r.note||null}),
   shelf:r=>({store_id:r.store_id,item_id:r.item_id,cap:r.cap|0}),
   back_stock:r=>({store_id:r.store_id,item_id:r.item_id,n:r.n|0}),
   pulls:r=>({id:r.id,store_id:r.store_id,store_name:r.store_name,kind:r.kind,at:r.at,by_name:r.by_name||"",items:r.items||{},need:r.need||{}})
 };
-const K={stores:r=>r.id,custom_items:r=>r.id,list_items:r=>r.store_id+"|"+r.kind+"|"+r.item_id,shelf:r=>r.store_id+"|"+r.item_id,back_stock:r=>r.store_id+"|"+r.item_id,pulls:r=>r.id};
+const K={stores:r=>r.id,custom_items:r=>r.id,routes:r=>r.id,schedule:r=>r.id,list_items:r=>r.store_id+"|"+r.kind+"|"+r.item_id,shelf:r=>r.store_id+"|"+r.item_id,back_stock:r=>r.store_id+"|"+r.item_id,pulls:r=>r.id};
 const J=r=>JSON.stringify(r);
 const kindOf=c=>c.startsWith("store:")?"truck":"backstock", prefOf=k=>k==="truck"?"store:":"backstock:";
 
@@ -31,6 +33,9 @@ function localRows(){
   const ids=new Set(store.stores.map(s=>s.id));
   store.stores.forEach((s,i)=>{R.stores[s.id]=N.stores({...s,pos:i});});
   store.custom.forEach(([b,f,z])=>{const id=key(b,f,z); R.custom_items[id]=N.custom_items({id,brand:b,flavor:f,size:z});});
+  store.routes.forEach((r,i)=>{R.routes[r.id]=N.routes({...r,pos:i});});
+  const rids=new Set(store.routes.map(r=>r.id));
+  store.schedule.forEach(a=>{if(rids.has(a.route_id)) R.schedule[a.id]=N.schedule(a);});
   for(const c in store.lists){
     const l=store.lists[c], sid=c.slice(c.indexOf(":")+1), kind=kindOf(c); if(!ids.has(sid)) continue;
     (l.list||[]).forEach((id,i)=>{const r=N.list_items({store_id:sid,kind,item_id:id,pos:i,qty:l.qty&&l.qty[id],floor:l.floor&&id in l.floor?l.floor[id]:null,
@@ -45,7 +50,10 @@ function localRows(){
 /* ---------- Putting a row from Supabase into this phone's copy ---------- */
 function listOf(sid,kind){const c=prefOf(kind)+sid; return store.lists[c]||(store.lists[c]={list:[],qty:{},done:{},seen:{},note:{},out:{},floor:{}});}
 function applyRow(t,r){
-  if(t==="stores"){const o={id:r.id,name:r.name,chain:r.chain||undefined,town:r.town||undefined,num:r.num||undefined,pos:r.pos}, i=store.stores.findIndex(s=>s.id===r.id);
+  if(t==="routes"){const o={id:r.id,name:r.name,county:r.county||undefined,store_ids:(r.store_ids||[]).slice(),pos:r.pos}, i=store.routes.findIndex(x=>x.id===r.id);
+    if(i<0) store.routes.push(o); else store.routes[i]=o; store.routes.sort((a,b)=>(a.pos??0)-(b.pos??0));}
+  else if(t==="schedule"){const o={id:r.id,user_id:r.user_id,route_id:r.route_id,day:r.day}, i=store.schedule.findIndex(x=>x.id===r.id); if(i<0) store.schedule.push(o); else store.schedule[i]=o;}
+  else if(t==="stores"){const o={id:r.id,name:r.name,chain:r.chain||undefined,town:r.town||undefined,num:r.num||undefined,county:r.county||undefined,pos:r.pos}, i=store.stores.findIndex(s=>s.id===r.id);
     if(i<0) store.stores.push(o); else store.stores[i]=Object.assign(store.stores[i],o);
     store.stores.sort((a,b)=>(a.pos??0)-(b.pos??0));}
   else if(t==="custom_items"){if(!store.custom.some(([b,f,z])=>key(b,f,z)===r.id)) store.custom.push([r.brand,r.flavor,r.size]); ensureBrand(r.brand); addCat(r.brand,r.flavor,r.size,true);}
@@ -63,7 +71,9 @@ function applyRow(t,r){
   else if(t==="pulls"){if(!store.history.some(e=>e.id===r.id)){store.history.push({id:r.id,t:Date.parse(r.at)||Date.now(),sid:r.store_id,sname:r.store_name,kind:r.kind,user:r.by_name||"",items:r.items||{},need:r.need||{}}); store.history.sort((a,b)=>a.t-b.t);}}
 }
 function removeRow(t,k){
-  if(t==="stores"){store.stores=store.stores.filter(s=>s.id!==k); delete store.lists["store:"+k]; delete store.lists["backstock:"+k];}
+  if(t==="routes"){store.routes=store.routes.filter(r=>r.id!==k); store.schedule=store.schedule.filter(a=>a.route_id!==k);}
+  else if(t==="schedule"){store.schedule=store.schedule.filter(a=>a.id!==k);}
+  else if(t==="stores"){store.stores=store.stores.filter(s=>s.id!==k); delete store.lists["store:"+k]; delete store.lists["backstock:"+k];}
   else if(t==="custom_items"){store.custom=store.custom.filter(([b,f,z])=>key(b,f,z)!==k);}
   else if(t==="list_items"){const [sid,kind,id]=k.split("|"), l=store.lists[prefOf(kind)+sid]; if(!l) return;
     l.list=(l.list||[]).filter(x=>x!==id); ["qty","done","seen","note","out","floor"].forEach(m=>{if(l[m]) delete l[m][id];});}
@@ -75,6 +85,7 @@ function removeRow(t,k){
 /* ---------- What Supabase last confirmed, per row; anything different on this phone still needs sending ---------- */
 const SYNC_KEY="bs-synced-v1";
 let synced=(()=>{try{const s=JSON.parse(localStorage.getItem(SYNC_KEY)); if(s&&s.stores) return s;}catch(e){} const o={}; TABLES.forEach(t=>o[t]={}); return o;})();
+TABLES.forEach(t=>{if(!synced[t]) synced[t]={};}); // tables added in later versions
 const keepSynced=()=>{try{localStorage.setItem(SYNC_KEY,JSON.stringify(synced));}catch(e){}};
 const keepLocal=()=>{try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}};
 
@@ -99,9 +110,9 @@ async function flush(){
       for(let i=0;i<up.length;i+=400){const part=up.slice(i,i+400); const {error}=await sb.from(t).upsert(part.map(x=>x[1]),{onConflict:PK[t]}); if(error) throw error; part.forEach(([k,,j])=>{synced[t][k]=j;}); sent+=part.length;}
     }
     // Deletes after everything else is in (stores last, since their lists go with them)
-    for(const t of ["list_items","shelf","back_stock","custom_items","stores"]){
+    for(const t of ["schedule","list_items","shelf","back_stock","custom_items","routes","stores"]){
       const gone=Object.keys(synced[t]).filter(k=>!(k in L[t])); if(!gone.length) continue;
-      if(t==="stores"||t==="custom_items"){const {error}=await sb.from(t).delete().in("id",gone); if(error) throw error;}
+      if(t==="stores"||t==="custom_items"||t==="routes"||t==="schedule"){const {error}=await sb.from(t).delete().in("id",gone); if(error) throw error;}
       else{const groups={}; gone.forEach(k=>{const p=k.split("|"), g=p.slice(0,-1).join("|"); (groups[g]=groups[g]||[]).push(p[p.length-1]);});
         for(const g in groups){const p=g.split("|"); let q=sb.from(t).delete().eq("store_id",p[0]); if(t==="list_items") q=q.eq("kind",p[1]);
           for(let i=0;i<groups[g].length;i+=200){const {error}=await q.in("item_id",groups[g].slice(i,i+200)); if(error) throw error;}}}
@@ -132,10 +143,10 @@ function loadAll(){if(!loading) loading=doLoad().finally(()=>{loading=null;}); r
 async function doLoad(){
   if(!user||!sb) return;
   let remote={};
-  try{ for(const t of ["custom_items",...TABLES.filter(t=>t!=="custom_items")]) remote[t]=await fetchAll(t); }
+  try{ for(const t of ["custom_items",...TABLES.filter(t=>t!=="custom_items")]) remote[t]=await fetchAll(t); await loadPeople(); }
   catch(e){console.warn("load",e); status("offline"); return;}
   const L=localRows();
-  for(const t of ["custom_items","stores","list_items","shelf","back_stock","pulls"]){
+  for(const t of ["custom_items","stores","routes","schedule","list_items","shelf","back_stock","pulls"]){
     const R={}; remote[t].forEach(r=>{R[K[t](r)]=r;});
     const pending=k=>(k in L[t])?J(L[t][k])!==synced[t][k]:(k in synced[t]); // changed or deleted here, not sent yet
     for(const k in R) if(!pending(k)) applyRow(t,R[k]);
@@ -146,12 +157,19 @@ async function doLoad(){
   keepSynced(); keepLocal(); refreshView(); flush();
 }
 
+// Everyone with an account, for the schedule (read only here; each person edits their own name)
+async function loadPeople(){
+  const {data,error}=await sb.from("profiles").select("id,first,last").order("first"); if(error) throw error;
+  store.people=data.map(p=>({id:p.id,first:p.first,last:p.last}));
+}
+
 /* ---------- Live changes from other phones ---------- */
 let queue=[], qtimer=0, channel=null;
 function subscribe(){
   if(channel) return;
   channel=sb.channel("beer-stocking");
   TABLES.forEach(t=>channel.on("postgres_changes",{event:"*",schema:"public",table:t},ev=>{queue.push([t,ev]); clearTimeout(qtimer); qtimer=setTimeout(drain,250);}));
+  channel.on("postgres_changes",{event:"*",schema:"public",table:"profiles"},()=>{loadPeople().then(()=>{keepLocal(); refreshView();}).catch(()=>{});});
   channel.subscribe(st=>{if(st==="SUBSCRIBED") loadAll();});
 }
 function drain(){
@@ -169,13 +187,14 @@ function drain(){
 let refreshLater=false;
 function refreshView(){
   const vis=n=>!document.getElementById("screen-"+n).hidden, a=document.activeElement;
-  if(a&&a.tagName==="INPUT"&&a.closest("#fill,#pull,#shelflist")){refreshLater=true; return;} // don't redraw under someone's thumb
+  if(a&&a.tagName==="INPUT"&&a.closest("#fill,#pull,#shelflist,#screen-sched")){refreshLater=true; return;} // don't redraw under someone's thumb
   refreshLater=false;
   if(vis("list")){if(ctx) state=getList(ctx); if(document.getElementById("view-pull").hidden) renderFill(); else {renderPull(); updateTotals();}}
   if(vis("stores")) renderStores();
   if(vis("home")) renderHome();
   if(vis("shelf")) renderShelf();
   if(vis("report")) renderReport();
+  if(vis("sched")) renderSched();
 }
 document.addEventListener("focusout",()=>{setTimeout(()=>{if(refreshLater) refreshView();},50);});
 

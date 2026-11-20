@@ -158,6 +158,36 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .seg button[aria-selected="true"]{background:var(--head);color:var(--accent)}
 .linkbtn{font:600 13px var(--body);color:var(--head);background:transparent;border:1px dashed color-mix(in srgb,var(--head) 45%,transparent);border-radius:8px;padding:6px 10px;cursor:pointer}
 .reportbtn{margin-top:14px}
+.today{margin:4px 0 0;font:700 15px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.myday{display:grid;gap:8px;margin-top:10px;padding:14px 16px;border-radius:16px;background:var(--head);color:var(--head-ink);box-shadow:var(--shadow)}
+.myday b{font-family:var(--display);font-size:24px;text-transform:uppercase;letter-spacing:.02em}
+.myday span{font-size:14px;opacity:.9}
+.myday .btn{background:var(--accent);color:var(--accent-ink);border:0}
+.filters{margin-top:4px}
+.prev{display:grid;gap:4px;margin:10px 0 6px;padding:12px 14px;border-radius:14px;border:1.5px dashed var(--line);background:var(--surface)}
+.prev>b{font-family:var(--display);font-size:18px;text-transform:uppercase;letter-spacing:.04em}
+.prev>span{font-size:14px;color:var(--muted)}
+.prev .rr{padding:6px 0}.prev .btn{margin-top:6px}
+.day{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;box-shadow:var(--shadow);overflow:hidden}
+.day.now{border-color:var(--head);border-width:2.5px}
+.dh{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line)}
+.dh b{font-family:var(--display);font-size:20px;text-transform:uppercase;letter-spacing:.03em}
+.dh .pill{background:var(--head);color:var(--accent);border:0}
+.asg{display:flex;align-items:center;gap:10px;padding:8px 12px}.asg+.asg{border-top:1px solid var(--line)}
+.asg span{flex:1;min-width:0}.asg small{display:block;color:var(--muted);font-size:13px}
+.asg .x{flex:none;font:600 13px var(--body);padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.asg .x.arm{background:var(--danger);color:#fff;border-color:var(--danger)}
+.addasg{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+.addasg select{flex:1;min-width:120px;font:15px var(--body);padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.addasg .btn{flex:none;padding:9px 14px}
+.none{padding:10px 12px;color:var(--muted);font-size:14px}
+.route{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;padding:12px;display:grid;gap:6px;box-shadow:var(--shadow)}
+.route .rh{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.route .rh b{font-family:var(--display);font-size:20px;text-transform:uppercase}
+.route .rh .btn{flex:none;padding:7px 12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.schip{font-size:13px;font-weight:600;padding:3px 9px;border-radius:12px;color:#fff;background:var(--sb,var(--head))}
+.formbtns{display:flex;gap:8px;flex-wrap:wrap}.formbtns .btn{flex:1}
 .copyform{display:flex;align-items:end;gap:10px;margin:0 0 10px}.copyform .field{flex:1}.copyform .btn{flex:none}
 .titlerow .date{flex:none;color:var(--head-ink);opacity:.8;font-size:14px}
 .rsum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
@@ -288,12 +318,14 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <div class="shelf" id="shelf" aria-hidden="true"></div>
   </header>
   <main class="wrap">
+    <p class="today" id="today"></p>
+    <div id="myday"></div>
     <p class="hint">What are you working on today?</p>
     <div class="choices">
       <button id="go-back" class="choice"><b>Backstock</b><span id="home-back-sub">Check the floor and pull from back stock</span><span class="art" id="art-back" aria-hidden="true"></span></button>
       <button id="go-truck" class="choice"><b>Truck Day</b><span id="home-truck-sub">Pick a store and work its truck list</span><span class="art" id="art-truck" aria-hidden="true"></span></button>
     </div>
-    <button id="go-report" class="btn wide reportbtn">Shortage report</button>
+    <div class="actions reportbtn"><button id="go-sched" class="btn">Schedule &amp; routes</button><button id="go-report" class="btn">Shortage report</button></div>
     <div id="history"></div>
     <div class="actions foot"><button id="editname" class="btn">Change name</button><button id="signout" class="btn">Sign out</button></div>
     <p class="hint" id="whoami"></p>
@@ -304,11 +336,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <div id="screen-stores" hidden>
   <header class="top"><div class="wrap solo"><div class="titlerow"><button id="storesback" class="backbtn">‹ Home</button><h1 id="storestitle">Truck Day</h1></div></div></header>
   <main class="wrap">
+    <div class="two filters">
+      <div class="field"><label for="fcounty">County</label><select id="fcounty"></select></div>
+      <div class="field"><label for="froute">Route</label><select id="froute"></select></div>
+    </div>
     <p class="hint" id="storeshint">Pick a store. Each store keeps its own list and counts.</p>
     <div id="storelist" class="choices"></div>
     <form id="storeform" class="form">
       <h3>Add a store</h3>
       <div class="field"><label for="sn">Store name</label><input id="sn" autocomplete="off" placeholder="e.g. Kroger Howell #123"></div>
+      <div class="field"><label for="sc">County</label><select id="sc"></select></div>
       <div id="pastewrap"><div class="field"><label for="st">Paste the truck list (optional)</label><textarea id="st" autocomplete="off" placeholder="Paste the list the same way you text it, e.g.&#10;24s&#10;light: 7&#10;blue: 3&#10;miller: 11c"></textarea></div>
       <p class="hint">Paste the note and the store starts with those items and counts. Leave it blank to start from the standard truck list.</p></div>
       <p id="serr" class="err" hidden></p>
@@ -334,6 +371,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <input id="search" type="search" placeholder="Find on list…" autocomplete="off">
     <div class="progress"><span id="prog">0 of 0 checked</span><div class="bar"><i id="progbar"></i></div></div>
     <p class="hint" id="fillhint"></p>
+    <div id="prevlog"></div>
     <div id="fill"></div>
   </section>
   <section id="view-pull" hidden>
@@ -354,6 +392,27 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   <input id="shelfsearch" type="search" placeholder="Find an item…" autocomplete="off">
   <p class="hint" id="shelfcount"></p>
   <div id="shelflist"></div>
+</main>
+</div>
+
+<div id="screen-sched" hidden>
+<header class="top"><div class="wrap solo"><div class="titlerow"><button id="schedback" class="backbtn">‹ Home</button><h1>Schedule</h1><span class="date" id="schedtoday"></span></div></div></header>
+<main class="wrap">
+  <p class="hint">Who works which route on which day. Everyone sees the same schedule, and each person's route for today shows on their home screen.</p>
+  <div class="two filters"><div class="field"><label for="scounty">County</label><select id="scounty"></select></div><div class="field"><label for="sperson">Person</label><select id="sperson"></select></div></div>
+  <div id="week"></div>
+  <h2 class="cat">Routes</h2>
+  <p class="hint">A route is a group of stores worked together. Pick a route on the store list to see just its stores.</p>
+  <div id="routes"></div>
+  <button id="newroute" class="btn wide">+ New route</button>
+  <form id="routeform" class="form" hidden>
+    <h3 id="rftitle">New route</h3>
+    <div class="two"><div class="field"><label for="rn">Route name</label><input id="rn" autocomplete="off" placeholder="e.g. Hartland · Howell"></div>
+    <div class="field"><label for="rc">County</label><select id="rc"></select></div></div>
+    <div class="field"><label>Stores on this route</label><div id="rstores" class="checks"></div></div>
+    <p id="rerr" class="err" hidden></p>
+    <div class="formbtns"><button type="button" id="rcancel" class="btn">Cancel</button><button type="button" id="rdelete" class="btn" hidden>Delete route</button><button type="submit" class="btn primary">Save route</button></div>
+  </form>
 </main>
 </div>
 
@@ -685,6 +744,11 @@ if(!Array.isArray(store.history)) store.history=[];
 if(!store.inv||typeof store.inv!=="object") store.inv={};
 // shelf: how many fit on the floor, by store then item (set on the Shelf amounts screen; changes with resets and end caps)
 if(!store.shelf||typeof store.shelf!=="object") store.shelf={};
+// routes: groups of stores; schedule: who works which route on which day (0 = Sunday); people: everyone with an account
+if(!Array.isArray(store.routes)) store.routes=[];
+if(!Array.isArray(store.schedule)) store.schedule=[];
+if(!Array.isArray(store.people)) store.people=[];
+
 // Every finished pull list gets an id so it's only ever sent once
 const newId=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID():"10000000-1000-4000-8000-100000000000".replace(/[018]/g,c=>(c^Math.random()*16>>c/4).toString(16));
 store.history.forEach(e=>{if(!e.id) e.id=newId();});
@@ -707,17 +771,22 @@ const CHAINS={
   buschs:{name:"Busch's",bg:"#241f21",accent:"#8cc63f"}
 };
 const chainOf=name=>{const n=name.toLowerCase(); return /kroger/.test(n)?"kroger":/meijer/.test(n)?"meijer":/wal-?mart/.test(n)?"walmart":/bu(s)?ch'?s|bush'?s/.test(n)?"buschs":"";};
+// Counties: stores carry one; the others show as places stores can be added
+const COUNTIES=["Livingston","Oakland","Washtenaw","Genesee","Ingham","Wayne","Macomb"];
 // The Livingston County stores: [chain, town, store #]
 const STORES=[["meijer","Hartland","245"],["kroger","Hartland","444"],["meijer","Howell","172"],["walmart","Howell","1754"],["kroger","Brighton","638"],["kroger","Hamburg","721"],["buschs","Pinckney","1051"]];
 // One-time: reset the store list to the Livingston stores. Kroger Hamburg keeps its id, lists and counts;
 // any other old store with the same name as a new one keeps its lists too. Everything else is cleared.
-if(store.storesV!==2){
-  const next=STORES.map(([c,town,num])=>({id:c==="kroger"&&town==="Hamburg"?"kroger-brighton":c+"-"+slug(town)+"-"+num,name:CHAINS[c].name+" "+town,chain:c,town,num}));
+if(!(store.storesV>=2)){
+  const next=STORES.map(([c,town,num])=>({id:c==="kroger"&&town==="Hamburg"?"kroger-brighton":c+"-"+slug(town)+"-"+num,name:CHAINS[c].name+" "+town,chain:c,town,num,county:"Livingston"}));
   const lists={};
   store.stores.forEach(o=>{const m=next.find(s=>s.id===o.id||s.name.toLowerCase()===String(o.name).toLowerCase());
     if(m) ["store:","backstock:"].forEach(p=>{if(store.lists[p+o.id]) lists[p+m.id]=store.lists[p+o.id];});});
   store.lists=lists; store.stores=next; store.storesV=2;
 }
+// One-time: the Livingston stores get their county
+if(store.storesV<3){const liv=new Set(STORES.map(([c,town,num])=>c==="kroger"&&town==="Hamburg"?"kroger-brighton":c+"-"+slug(town)+"-"+num));
+  store.stores.forEach(s=>{if(!s.county&&liv.has(s.id)) s.county="Livingston";}); store.storesV=3;}
 // One-time: history saved under a renamed item id moves to the new id
 if(store.histV!==2){
   store.history.forEach(e=>{for(const o in ID_RENAME) if(e.items&&o in e.items){e.items[ID_RENAME[o]]=(e.items[ID_RENAME[o]]||0)+e.items[o]; delete e.items[o];}});
@@ -808,6 +877,7 @@ const $fill=document.getElementById("fill"), $search=document.getElementById("se
 function hay(it){return (it.brand+" "+it.flavor+" "+it.size+" "+(ALIAS[it.brand.toLowerCase()]||"")+(isNA(it)?" na non-alcoholic":"")).toLowerCase().replace(/'/g,"");}
 function matches(it,q){const h=hay(it);return q.split(/\s+/).filter(Boolean).every(t=>h.includes(t));}
 function renderFill(){
+  renderPrev();
   const q=$search.value.trim().toLowerCase().replace(/'/g,"");
   const listed=state.list.map(id=>byId[id]).filter(it=>!q||matches(it,q));
   let html="";
@@ -1039,7 +1109,7 @@ document.getElementById("tab-pull").addEventListener("click",()=>show("pull"));
 
 /* ---------- Screens: home, Truck Day stores, list ---------- */
 function showScreen(name){
-  ["auth","home","stores","list","shelf","report"].forEach(s=>{document.getElementById("screen-"+s).hidden=s!==name;});
+  ["auth","home","stores","list","shelf","report","sched"].forEach(s=>{document.getElementById("screen-"+s).hidden=s!==name;});
   if(name!=="list"&&name!=="shelf") brandOn(null);
   if(name==="home") renderHome();
   if(name==="stores") renderStores();
@@ -1055,6 +1125,10 @@ function renderHome(){
   document.getElementById("welcome").textContent=store.me&&store.me.first?"Welcome, "+store.me.first:"Welcome";
   document.getElementById("home-back-sub").textContent="Pick a store, check the floor and pull from back stock · "+s;
   document.getElementById("home-truck-sub").textContent="Pick a store and work its truck list · "+s;
+  document.getElementById("today").textContent="Today · "+new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  const rs=myRoutesToday();
+  document.getElementById("myday").innerHTML=rs.length?rs.map(r=>`<div class="myday"><span>Your route today</span><b>${esc(r.name)}</b><span>${r.store_ids.map(id=>store.stores.find(x=>x.id===id)).filter(Boolean).map(x=>esc(storeLabel(x))).join(" · ")}</span><button class="btn" data-myroute="${esc(r.id)}">Open route</button></div>`).join("")
+    :(store.owner&&store.routes.length?`<p class="hint">Nothing on the schedule for you today.</p>`:"");
   renderHistory();
 }
 function showStores(m){
@@ -1070,7 +1144,7 @@ function openList(c){
   const ch=st&&st.chain&&CHAINS[st.chain], h1=document.getElementById("listtitle");
   h1.innerHTML=ch?`<i class="slogo tl ${st.chain}" aria-hidden="true">${chainLogo(st.chain)}</i><span><span class="sr">${esc(ch.name)} </span>${esc(st.town||st.name)}${st.num?` <small>#${esc(st.num)}</small>`:""}</span>`:esc(st?st.name:"Store");
   brandOn(st);
-  document.getElementById("date").textContent=truck?"Truck Day":"Backstock";
+  document.getElementById("date").textContent=(truck?"Truck Day":"Backstock")+" · "+new Date().toLocaleDateString(undefined,{weekday:"short",month:"numeric",day:"numeric"});
   document.getElementById("fillhint").textContent=truck
     ?"Count what's on the shelf and the app works out how many go out (set Shelf amounts first), or tap + for how many. Tick the box once you've checked it. Everyone on the team sees the same list."
     :"Count what's on the shelf and the app works out what's needed (set Shelf amounts first), or tap + for how many. Put how many are in back stock under it. Everyone on the team sees the same list.";
@@ -1088,8 +1162,13 @@ function brandOn(st){
 let armedStore=null;
 function renderStores(){
   const el=document.getElementById("storelist");
-  el.innerHTML=store.stores.length?store.stores.map(s=>{const c=s.chain&&CHAINS[s.chain]; return `<div class="storerow"><button class="choice${c?" brand":""}" data-store="${esc(s.id)}"${c?` style="--sb:${c.bg};--sa:${c.accent}"`:""}>${c?`<i class="slogo ${s.chain}" aria-hidden="true">${chainLogo(s.chain)}</i><b><span class="sr">${esc(c.name)} </span>${esc(s.town||s.name)}${s.num?` <small>#${esc(s.num)}</small>`:""}</b>`:`<b>${esc(s.name)}</b>`}<span>${summary(prefix()+s.id)}</span></button><button class="rm${armedStore===s.id?" arm":""}" data-rm="${esc(s.id)}" aria-label="Remove ${esc(s.name)}">${armedStore===s.id?"Tap again":"Remove"}</button></div>`;}).join("")
-    :`<div class="empty">No stores yet. Add one below.</div>`;
+  fillFilters();
+  const shown=shownStores(), {county,route}=filt();
+  const rname=route==="@me"?"your route today":(routeOf(route)||{}).name;
+  document.getElementById("storeshint").textContent=(shown.length<store.stores.length?`Showing ${shown.length} of ${store.stores.length} stores`+(county?` in ${county} County`:"")+(rname?` on ${rname}`:"")+". ":"")+(mode==="truck"?"Pick a store. Each store keeps its own truck list and counts.":"Pick a store. Each store keeps its own back-stock list and counts.");
+  if(!shown.length){el.innerHTML=`<div class="empty">${county&&!store.stores.some(s=>s.county===county)?`No stores in ${esc(county)} County yet. Add one below and pick ${esc(county)} as its county.`:`No stores match. Change the county or route above.`}</div>`;return;}
+  el.innerHTML=shown.map(s=>{const c=s.chain&&CHAINS[s.chain]; return `<div class="storerow"><button class="choice${c?" brand":""}" data-store="${esc(s.id)}"${c?` style="--sb:${c.bg};--sa:${c.accent}"`:""}>${c?`<i class="slogo ${s.chain}" aria-hidden="true">${chainLogo(s.chain)}</i><b><span class="sr">${esc(c.name)} </span>${esc(s.town||s.name)}${s.num?` <small>#${esc(s.num)}</small>`:""}</b>`:`<b>${esc(s.name)}</b>`}<span>${summary(prefix()+s.id)}</span></button><button class="rm${armedStore===s.id?" arm":""}" data-rm="${esc(s.id)}" aria-label="Remove ${esc(s.name)}">${armedStore===s.id?"Tap again":"Remove"}</button></div>`;}).join("")
+    ;
 }
 document.getElementById("storelist").addEventListener("click",e=>{
   const open=e.target.closest("[data-store]");
@@ -1118,7 +1197,8 @@ document.getElementById("storeform").addEventListener("submit",e=>{
   }
   err.hidden=true;
   const id=slug(name)+"-"+Date.now().toString(36);
-  store.stores.push(chain?{id,name,chain,town:town||CHAINS[chain].name,num}:{id,name,num});
+  const county=document.getElementById("sc").value||undefined;
+  store.stores.push(chain?{id,name,chain,town:town||CHAINS[chain].name,num,county}:{id,name,num,county});
   if(parsed){const seen={}; Object.keys(parsed.qty).forEach(k=>{seen[k]=true;});
     store.lists["store:"+id]={list:parsed.ids,qty:parsed.qty,done:{},seen,note:parsed.note};}
   save();inp.value="";ta.value="";
@@ -1130,6 +1210,134 @@ document.getElementById("go-back").addEventListener("click",()=>showStores("back
 document.getElementById("go-truck").addEventListener("click",()=>showStores("truck"));
 document.getElementById("storesback").addEventListener("click",()=>showScreen("home"));
 document.getElementById("listback").addEventListener("click",()=>showStores(ctx.startsWith("store:")?"truck":"backstock"));
+
+/* ---------- Days, counties and routes ---------- */
+const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const dayKey=t=>{const d=new Date(t); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();};
+const routeOf=id=>store.routes.find(r=>r.id===id);
+const personName=id=>{const p=store.people.find(x=>x.id===id); if(p) return `${p.first} ${p.last}`.trim(); return id===store.owner&&store.me?`${store.me.first} ${store.me.last}`.trim():"Someone";};
+const countyList=()=>[...new Set([...COUNTIES,...store.stores.map(s=>s.county).filter(Boolean),...store.routes.map(r=>r.county).filter(Boolean)])];
+const myRoutesToday=()=>store.owner?store.schedule.filter(a=>a.user_id===store.owner&&a.day===new Date().getDay()).map(a=>routeOf(a.route_id)).filter(Boolean):[];
+// The store-list filter is just for this phone
+const filt=()=>{store.filt=store.filt||{county:"",route:""}; return store.filt;};
+function shownStores(){
+  const {county,route}=filt();
+  let ids=null;
+  if(route==="@me") ids=new Set(myRoutesToday().flatMap(r=>r.store_ids));
+  else if(route&&routeOf(route)) ids=new Set(routeOf(route).store_ids);
+  return store.stores.filter(s=>(!county||s.county===county)&&(!ids||ids.has(s.id)));
+}
+const countyOpts=(sel,withAll)=>(withAll?`<option value="">All counties</option>`:"")+countyList().map(c=>{const n=store.stores.filter(s=>s.county===c).length; return `<option value="${esc(c)}"${c===sel?" selected":""}>${esc(c)} County${n?` (${n})`:" (no stores yet)"}</option>`;}).join("");
+function fillFilters(){
+  const f=filt();
+  if(f.route&&f.route!=="@me"&&!routeOf(f.route)) f.route="";
+  if(f.route==="@me"&&!myRoutesToday().length) f.route="";
+  document.getElementById("fcounty").innerHTML=countyOpts(f.county,true);
+  const rs=store.routes.filter(r=>!f.county||r.county===f.county);
+  document.getElementById("froute").innerHTML=`<option value="">All routes</option>`+(myRoutesToday().length?`<option value="@me"${f.route==="@me"?" selected":""}>My route today</option>`:"")
+    +rs.map(r=>`<option value="${esc(r.id)}"${r.id===f.route?" selected":""}>${esc(r.name)} (${r.store_ids.length})</option>`).join("");
+  const sc=document.getElementById("sc"); sc.innerHTML=countyOpts(f.county||"Livingston",false);
+}
+document.getElementById("fcounty").addEventListener("change",e=>{const f=filt(); f.county=e.target.value; if(f.route&&f.route!=="@me"&&routeOf(f.route)&&f.county&&routeOf(f.route).county!==f.county) f.route=""; save(); renderStores();});
+document.getElementById("froute").addEventListener("change",e=>{filt().route=e.target.value; save(); renderStores();});
+
+/* ---------- From the day before: what the last Backstock log at this store couldn't put out ---------- */
+function renderPrev(){
+  const el=document.getElementById("prevlog");
+  if(!isBack()){el.innerHTML="";return;}
+  const today=dayKey(Date.now()), sid=curSid();
+  const prev=store.history.filter(e=>e.sid===sid&&e.kind==="backstock"&&dayKey(e.t)<today);
+  const y=new Date(); y.setDate(y.getDate()-1); const ylab=y.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+  if(!prev.length){el.innerHTML=`<div class="prev"><b>From the day before</b><span>No previous log for this store yet (nothing saved here ${esc(ylab)} or earlier). Once someone finishes a Backstock pull list here, anything that couldn't go out shows up here the next day, so whoever works the store knows what's still needed.</span></div>`;return;}
+  const last=Math.max(...prev.map(e=>dayKey(e.t))), es=prev.filter(e=>dayKey(e.t)===last);
+  const when=new Date(es[es.length-1].t), wlab=(last===dayKey(y)?"Yesterday, ":"")+when.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+  const who=[...new Set(es.map(e=>e.user).filter(Boolean))].join(", ");
+  const left={}; es.forEach(e=>{for(const id in (e.need||{})){const sh=(e.need[id]|0)-((e.items&&e.items[id])|0); if(sh>0) left[id]=(left[id]||0)+sh;}});
+  const ids=Object.keys(left).filter(id=>byId[id]);
+  if(!ids.length){el.innerHTML=`<div class="prev"><b>Last log · ${esc(wlab)}</b><span>${who?esc(who)+" put out everything that was needed.":"Everything that was needed went out."}</span></div>`;return;}
+  el.innerHTML=`<div class="prev"><b>Left from ${esc(wlab)}</b><span>${who?esc(who)+" couldn't put these out:":"These couldn't go out:"}</span>`
+    +ids.sort((a,b)=>left[b]-left[a]).map(id=>{const it=byId[id]; return `<div class="rr">${thumb(it)}<span class="nm"><span class="lbl">${esc(full(it))}</span>${chipHtml(it)}</span><span class="q">${left[id]}</span></div>`;}).join("")
+    +`<button class="btn" id="addprev" data-ids="${esc(ids.map(id=>id+":"+left[id]).join(","))}">Add these to today's list</button></div>`;
+}
+document.getElementById("prevlog").addEventListener("click",e=>{
+  const b=e.target.closest("#addprev"); if(!b) return;
+  let n=0; b.dataset.ids.split(",").forEach(p=>{const [id,q]=p.split(":"); if(!byId[id]) return; if(!state.list.includes(id)) state.list.push(id); if((state.qty[id]||0)<+q){state.qty[id]=+q; n++;}});
+  save(); renderFill(); toast(n?`Added ${n} item${n===1?"":"s"} from the last log`:"Those are already on today's list");
+});
+
+/* ---------- Schedule: who works which route on which day; routes are groups of stores ---------- */
+let armedAsg=null, editRoute=null;
+function openSched(){
+  document.getElementById("scounty").innerHTML=countyOpts(document.getElementById("scounty").value||"",true);
+  showScreen("sched"); renderSched();
+}
+function peopleList(){const ps=store.people.slice(); if(store.owner&&!ps.some(p=>p.id===store.owner)&&store.me) ps.unshift({id:store.owner,first:store.me.first,last:store.me.last}); return ps;}
+function renderSched(){
+  const c=document.getElementById("scounty").value, sp=document.getElementById("sperson"), pv=sp.value, ps=peopleList();
+  sp.innerHTML=`<option value="">Everyone</option>`+ps.map(p=>`<option value="${esc(p.id)}"${p.id===pv?" selected":""}>${esc(`${p.first} ${p.last}`.trim())}</option>`).join("");
+  const p=sp.value, today=new Date().getDay(), rs=store.routes.filter(r=>!c||r.county===c);
+  document.getElementById("schedtoday").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"numeric",day:"numeric"});
+  const canAdd=ps.length&&rs.length;
+  let html=canAdd?"":`<p class="hint">${!ps.length?"Sign in to assign people. Everyone shows up here once they create an account.":"Make a route below first, then assign people to it."}</p>`;
+  for(const d of [1,2,3,4,5,6,0]){
+    const as=store.schedule.filter(a=>a.day===d&&routeOf(a.route_id)&&(!p||a.user_id===p)&&(!c||routeOf(a.route_id).county===c));
+    html+=`<div class="day${d===today?" now":""}"><div class="dh"><b>${DAYS[d]}</b>${d===today?`<span class="pill">Today</span>`:""}</div>`
+      +(as.length?as.map(a=>{const r=routeOf(a.route_id); return `<div class="asg"><span><b>${esc(personName(a.user_id))}</b><small>${esc(r.name)} · ${r.store_ids.length} store${r.store_ids.length===1?"":"s"}${r.county?` · ${esc(r.county)}`:""}</small></span><button class="x${armedAsg===a.id?" arm":""}" data-del="${esc(a.id)}">${armedAsg===a.id?"Tap again":"Remove"}</button></div>`;}).join(""):`<div class="none">No one scheduled.</div>`)
+      +(canAdd?`<div class="addasg"><select class="ap" aria-label="Person for ${DAYS[d]}">${ps.map(x=>`<option value="${esc(x.id)}"${x.id===p?" selected":""}>${esc(`${x.first} ${x.last}`.trim())}</option>`).join("")}</select><select class="ar" aria-label="Route for ${DAYS[d]}">${rs.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join("")}</select><button class="btn" data-add="${d}">Assign</button></div>`:"")+`</div>`;
+  }
+  document.getElementById("week").innerHTML=html;
+  document.getElementById("routes").innerHTML=rs.length?rs.map(r=>`<div class="route"><div class="rh"><b>${esc(r.name)}</b><button class="btn" data-edit="${esc(r.id)}">Edit</button></div><span class="hint">${r.county?esc(r.county)+" County · ":""}${r.store_ids.length} store${r.store_ids.length===1?"":"s"}</span><div class="chips">${r.store_ids.map(id=>store.stores.find(s=>s.id===id)).filter(Boolean).map(s=>`<span class="schip" style="--sb:${s.chain&&CHAINS[s.chain]?CHAINS[s.chain].bg:"var(--head)"}">${esc(storeLabel(s))}</span>`).join("")}</div></div>`).join("")
+    :`<div class="empty">${c?`No routes in ${esc(c)} County yet.`:"No routes yet."} Tap <b>+ New route</b> to make one.</div>`;
+}
+document.getElementById("week").addEventListener("click",e=>{
+  const add=e.target.closest("[data-add]");
+  if(add){const row=add.closest(".addasg"), d=+add.dataset.add, user_id=row.querySelector(".ap").value, route_id=row.querySelector(".ar").value;
+    if(store.schedule.some(a=>a.day===d&&a.user_id===user_id&&a.route_id===route_id)){toast("Already on the schedule");return;}
+    store.schedule.push({id:newId(),user_id,route_id,day:d}); save(); renderSched(); toast(`${personName(user_id)} · ${routeOf(route_id).name} on ${DAYS[d]}`);return;}
+  const del=e.target.closest("[data-del]"); if(!del) return;
+  const id=del.dataset.del;
+  if(armedAsg!==id){armedAsg=id; renderSched(); clearTimeout(renderSched.h); renderSched.h=setTimeout(()=>{armedAsg=null; renderSched();},3000); return;}
+  clearTimeout(renderSched.h); armedAsg=null; store.schedule=store.schedule.filter(a=>a.id!==id); save(); renderSched(); toast("Removed from the schedule");
+});
+document.getElementById("scounty").addEventListener("change",renderSched);
+document.getElementById("sperson").addEventListener("change",renderSched);
+// Route editor
+function routeStoresHtml(county,checked){
+  const ss=store.stores.filter(s=>!county||s.county===county);
+  return ss.length?ss.map(s=>`<label class="chk"><input type="checkbox" value="${esc(s.id)}"${checked.includes(s.id)?" checked":""}> ${esc(storeLabel(s))}</label>`).join(""):`<p class="hint">No stores in ${esc(county)} County yet. Add them from the store list first.</p>`;
+}
+function openRouteForm(r){
+  editRoute=r?r.id:null; const f=document.getElementById("routeform");
+  document.getElementById("rftitle").textContent=r?"Edit route":"New route";
+  document.getElementById("rn").value=r?r.name:"";
+  const county=r?r.county||"":(document.getElementById("scounty").value||"Livingston");
+  document.getElementById("rc").innerHTML=countyOpts(county,false);
+  document.getElementById("rstores").innerHTML=routeStoresHtml(county,r?r.store_ids:[]);
+  document.getElementById("rdelete").hidden=!r; document.getElementById("rerr").hidden=true;
+  f.hidden=false; document.getElementById("newroute").hidden=true; f.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function closeRouteForm(){document.getElementById("routeform").hidden=true; document.getElementById("newroute").hidden=false; editRoute=null;}
+document.getElementById("newroute").addEventListener("click",()=>openRouteForm(null));
+document.getElementById("routes").addEventListener("click",e=>{const b=e.target.closest("[data-edit]"); if(b) openRouteForm(routeOf(b.dataset.edit));});
+document.getElementById("rc").addEventListener("change",e=>{const keep=[...document.querySelectorAll("#rstores input:checked")].map(i=>i.value); document.getElementById("rstores").innerHTML=routeStoresHtml(e.target.value,keep);});
+document.getElementById("rcancel").addEventListener("click",closeRouteForm);
+document.getElementById("routeform").addEventListener("submit",e=>{
+  e.preventDefault();
+  const name=document.getElementById("rn").value.trim(), county=document.getElementById("rc").value, ids=[...document.querySelectorAll("#rstores input:checked")].map(i=>i.value), err=document.getElementById("rerr");
+  if(!name){err.textContent="Give the route a name.";err.hidden=false;return;}
+  if(!ids.length){err.textContent="Pick at least one store.";err.hidden=false;return;}
+  if(editRoute){Object.assign(routeOf(editRoute),{name,county,store_ids:ids});}
+  else store.routes.push({id:slug(name)+"-"+Date.now().toString(36),name,county,store_ids:ids});
+  save(); closeRouteForm(); renderSched(); toast("Route saved");
+});
+armButton(document.getElementById("rdelete"),"Delete route","Tap again to delete",()=>{
+  const id=editRoute; store.routes=store.routes.filter(r=>r.id!==id); store.schedule=store.schedule.filter(a=>a.route_id!==id);
+  if(filt().route===id) filt().route=""; save(); closeRouteForm(); renderSched(); toast("Route deleted");
+});
+document.getElementById("go-sched").addEventListener("click",openSched);
+document.getElementById("schedback").addEventListener("click",()=>{closeRouteForm(); showScreen("home");});
+// Home: today's date and your route
+document.getElementById("myday").addEventListener("click",e=>{const b=e.target.closest("[data-myroute]"); if(!b) return; const f=filt(); f.route=b.dataset.myroute; f.county=""; save(); showStores("backstock");});
 
 /* ---------- Shelf amounts: how many fit on the floor for every item at one store, all editable at once ---------- */
 let shelfSid="";
