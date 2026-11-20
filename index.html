@@ -83,8 +83,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .slogo.buschs{height:46px}.slogo.buschs img{max-height:46px}
 .slogo.walmart img{max-height:30px}
 .slogo em{font:700 22px/1 var(--body);font-style:normal;color:#fff;letter-spacing:-.01em}
-.titlerow h1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.titlerow h1{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 .titlerow h1 small{font-size:18px;color:var(--accent);letter-spacing:.04em}
+.titlerow h1>span{white-space:nowrap;font-size:23px}
+.titlerow h1>span small{font-size:16px}
 .slogo.tl{height:30px}.slogo.tl img{max-height:26px;max-width:92px}
 .slogo.tl.buschs{height:34px}.slogo.tl.buschs img{max-height:34px}
 .slogo.tl.walmart img{max-height:24px}.slogo.tl em{font-size:18px}
@@ -198,7 +200,17 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .sec{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.04em;text-transform:uppercase;margin:20px 0 6px;display:flex;justify-content:space-between;align-items:baseline}
 .sec span{font-family:var(--body);font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0;text-transform:none}
 .plist{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
-.pi{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px;border:0;background:transparent;color:var(--ink);font:500 16px var(--body);cursor:pointer;min-height:52px}
+.pi{display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 10px 8px 4px;color:var(--ink);font:500 16px var(--body);min-height:52px}
+.need{flex-basis:100%;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.short{color:var(--danger);font-weight:600}
+.outw{flex:none;display:grid;justify-items:center;gap:2px}
+.outw>span{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.step.sm button{width:36px;height:38px;font-size:19px}
+.step.sm input{width:44px;height:38px;font-size:17px}
+/* Backstock: how many are in the back, under each line */
+.row{flex-wrap:wrap}
+.inback{flex-basis:100%;display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:0 0 4px 52px;font-size:13px;color:var(--muted)}
+.inback>span{text-align:right}
 .pi+.pi{border-top:1px solid var(--line)}
 .q{font-family:var(--display);font-weight:700;font-size:24px;font-variant-numeric:tabular-nums;min-width:36px;text-align:right}
 .pi.done{color:var(--muted)}
@@ -620,6 +632,8 @@ if(store.truckV!==2){
 if(!store.me||!store.me.first){const a=store.accounts&&store.accounts[store.session]; store.me=a&&a.name?{first:a.name,last:a.last||""}:null;}
 delete store.accounts; delete store.session;
 if(!Array.isArray(store.history)) store.history=[];
+// inv: back stock on hand, by store then item: {n: how many, t: when it was counted}. Shaped to move to Supabase later (one row per store + item).
+if(!store.inv||typeof store.inv!=="object") store.inv={};
 // The old single Backstock list now belongs to the first store
 if(store.lists.backstock){ if(store.stores[0]&&!store.lists["backstock:"+store.stores[0].id]) store.lists["backstock:"+store.stores[0].id]=store.lists.backstock; delete store.lists.backstock; }
 // Items whose pack changed: Super Lyte is an 8 can, Mike's Original and Black Cherry six-packs are cans
@@ -659,11 +673,16 @@ if(store.histV!==2){
 function getList(c){
   let l=store.lists[c];
   if(!l) l=store.lists[c]={list:(c.startsWith("backstock")?[]:TRUCK).slice(),qty:{},done:{},seen:{},note:{}};
-  ["qty","done","seen","note"].forEach(k=>{l[k]=l[k]||{}; for(const o in ID_RENAME) if(o in l[k]){l[k][ID_RENAME[o]]=l[k][o]; delete l[k][o];}});
+  ["qty","done","seen","note","out"].forEach(k=>{l[k]=l[k]||{}; for(const o in ID_RENAME) if(o in l[k]){l[k][ID_RENAME[o]]=l[k][o]; delete l[k][o];}});
   l.list=[...new Set((l.list||[]).map(id=>ID_RENAME[id]||id))].filter(id=>byId[id]);
   return l;
 }
-let ctx="", mode="truck", state={list:[],qty:{},done:{},seen:{},note:{}};
+let ctx="", mode="truck", state={list:[],qty:{},done:{},seen:{},note:{},out:{}};
+const curSid=()=>ctx.slice(ctx.indexOf(":")+1), isBack=()=>ctx.startsWith("backstock:");
+// How many are in the back at this store (null = not counted yet)
+const invOf=id=>{const s=store.inv[curSid()]; return s&&s[id]?s[id].n:null;};
+// How many actually went out: what was typed on the pull list, otherwise what's needed (capped at what's in the back)
+const outOf=id=>{if(id in state.out) return state.out[id]; const need=state.qty[id]||0, b=isBack()?invOf(id):null; return b==null?need:Math.min(need,b);};
 const prefix=()=>mode==="truck"?"store:":"backstock:";
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}};
 const full=it=>it.flavor?it.brand+" "+it.flavor:it.brand;
@@ -752,7 +771,23 @@ function rowHtml(it){
   return `<div class="row${n?" has":""}${c?" checked":""}" data-id="${it.id}">
     <button class="ck" aria-pressed="${c}" aria-label="Checked ${esc(full(it))} ${it.size} on the floor"><span class="box">${c?"✓":""}</span></button>
     ${thumb(it)}<div class="nm"><span class="lbl">${esc(lbl(it))}</span>${chipHtml(it)}${noteHtml(it)}</div>
-    <div class="step"><button data-d="-1" aria-label="Less ${esc(full(it))}">−</button><input id="q-${it.id}" inputmode="numeric" pattern="[0-9]*" value="${n||""}" placeholder="0" aria-label="${esc(full(it))} ${esc(it.size)} needed"><button data-d="1" aria-label="More ${esc(full(it))}">+</button></div></div>`;
+    <div class="step"><button data-d="-1" aria-label="Less ${esc(full(it))}">−</button><input id="q-${it.id}" inputmode="numeric" pattern="[0-9]*" value="${n||""}" placeholder="0" aria-label="${esc(full(it))} ${esc(it.size)} needed"><button data-d="1" aria-label="More ${esc(full(it))}">+</button></div>${isBack()?inbackHtml(it):""}</div>`;
+}
+function inbackHtml(it){
+  const b=invOf(it.id);
+  return `<div class="inback"><span id="ib-${it.id}">${inbackLabel(it.id)}</span><div class="step sm"><button data-i="-1" aria-label="Fewer ${esc(full(it))} in back stock">−</button><input data-inv inputmode="numeric" pattern="[0-9]*" value="${b==null?"":b}" placeholder="–" aria-label="${esc(full(it))} ${esc(it.size)} in back stock"><button data-i="1" aria-label="More ${esc(full(it))} in back stock">+</button></div></div>`;
+}
+function inbackLabel(id){
+  const b=invOf(id), need=state.qty[id]||0;
+  return "In back stock"+(b!=null&&need>b?` · <b class="short">short ${need-b}</b>`:"");
+}
+function setInv(id,v){
+  const sid=curSid(), s=store.inv[sid]=store.inv[sid]||{};
+  if(v===""||v==null) delete s[id]; else s[id]={n:Math.max(0,Math.min(999,v|0)),t:Date.now()};
+  save();
+  const row=$fill.querySelector(`.row[data-id="${id}"]`);
+  if(row){const inp=row.querySelector("input[data-inv]"), b=invOf(id); if(document.activeElement!==inp) inp.value=b==null?"":b;}
+  const lb=document.getElementById("ib-"+id); if(lb) lb.innerHTML=inbackLabel(id);
 }
 function updateBrand(b){
   const el=document.getElementById("bt-"+slug(b)); if(!el) return;
@@ -772,24 +807,28 @@ function setQty(id,n){
   if(n){state.qty[id]=n; state.seen[id]=true;} else {delete state.qty[id]; delete state.done[id]; delete state.note[id];}
   save();
   const row=$fill.querySelector(`.row[data-id="${id}"]`);
-  if(row){row.classList.toggle("has",!!n); syncCheck(row,!!state.seen[id]); const inp=row.querySelector("input"); if(document.activeElement!==inp) inp.value=n||"";}
+  if(row){row.classList.toggle("has",!!n); syncCheck(row,!!state.seen[id]); const inp=row.querySelector("input:not([data-inv])"); if(document.activeElement!==inp) inp.value=n||"";}
+  const lb=document.getElementById("ib-"+id); if(lb) lb.innerHTML=inbackLabel(id);
   updateBrand(grpOf(byId[id])); updateTotals();
 }
 function syncCheck(row,c){row.classList.toggle("checked",c);const b=row.querySelector(".ck");b.setAttribute("aria-pressed",c);b.firstElementChild.textContent=c?"✓":"";}
 $fill.addEventListener("click",e=>{
   const ck=e.target.closest(".ck");
   if(ck){const row=ck.closest(".row"),id=row.dataset.id; if(state.seen[id]) delete state.seen[id]; else state.seen[id]=true; save(); syncCheck(row,!!state.seen[id]); updateBrand(grpOf(byId[id])); updateTotals(); return;}
+  const ib=e.target.closest("button[data-i]");
+  if(ib){const id=ib.closest(".row").dataset.id; setInv(id,Math.max(0,(invOf(id)||0)+Number(ib.dataset.i)));return;}
   const btn=e.target.closest("button[data-d]"); if(!btn) return;
   const id=btn.closest(".row").dataset.id; setQty(id,(state.qty[id]||0)+Number(btn.dataset.d));
 });
-$fill.addEventListener("input",e=>{if(e.target.tagName==="INPUT") setQty(e.target.closest(".row").dataset.id,parseInt(e.target.value,10)||0);});
+$fill.addEventListener("input",e=>{if(e.target.tagName!=="INPUT") return; const id=e.target.closest(".row").dataset.id;
+  if(e.target.hasAttribute("data-inv")){const v=e.target.value.trim(); setInv(id,v===""?"":parseInt(v,10)||0);} else setQty(id,parseInt(e.target.value,10)||0);});
 $fill.addEventListener("focusin",e=>{if(e.target.tagName==="INPUT") e.target.select();});
 $search.addEventListener("input",renderFill);
 // One tap clears the whole list right away; Undo brings it back
 document.getElementById("clearlist").addEventListener("click",()=>{
   if(!state.list.length){toast("The list is already empty");return;}
   const snap=JSON.stringify(state), st=state;
-  state.list=[];state.qty={};state.done={};state.seen={};state.note={};save();$search.value="";renderFill();
+  state.list=[];state.qty={};state.done={};state.seen={};state.note={};state.out={};save();$search.value="";renderFill();
   toast("List cleared",()=>{Object.assign(st,JSON.parse(snap));save();if(state===st) renderFill();});
 });
 
@@ -797,25 +836,50 @@ document.getElementById("clearlist").addEventListener("click",()=>{
 const $pull=document.getElementById("pull");
 const pulled=()=>state.list.filter(id=>state.qty[id]>0).map(id=>byId[id]);
 function renderPull(){
-  const list=pulled(), total=list.reduce((s,it)=>s+state.qty[it.id],0), doneN=list.filter(it=>state.done[it.id]).length;
-  document.getElementById("pullsummary").textContent=list.length?`${list.length} items · ${total} total · ${doneN} pulled. Tap a line once it's on the cart.`:"";
+  const list=pulled(), doneN=list.filter(it=>state.done[it.id]).length;
+  pullSummary();
   if(!list.length){$pull.innerHTML=`<div class="empty">No items yet. Go to <b>Fill in</b> and tap + on what the floor needs. They'll show up here grouped by brand.</div>`;return;}
   let html=doneN===list.length?`<div class="cheers">Cart's loaded. Every item on this list is pulled.</div>`:"";
   for(const [cat,b,its] of byBrand(list)){
     if(cat) html+=`<h2 class="cat">${cat}</h2>`;
     html+=`<h3 class="sec">${headHtml(b)}<span>${its.reduce((s,it)=>s+state.qty[it.id],0)} total</span></h3><div class="plist">`+its.map(it=>{const d=!!state.done[it.id];
-      return `<button class="pi${d?" done":""}" data-id="${it.id}" aria-pressed="${d}"><span class="box">${d?"✓":""}</span>${thumb(it)}<span class="nm"><span class="lbl">${esc(lbl(it))}</span>${chipHtml(it)}${noteHtml(it)}</span><span class="q">${state.qty[it.id]}</span></button>`}).join("")+`</div>`;
+      return `<div class="pi${d?" done":""}" data-id="${it.id}"><button class="ck" aria-pressed="${d}" aria-label="Pulled ${esc(full(it))} ${it.size}"><span class="box">${d?"✓":""}</span></button>${thumb(it)}<span class="nm"><span class="lbl">${esc(lbl(it))}</span>${chipHtml(it)}${noteHtml(it)}<span class="need" id="nd-${it.id}">${needHtml(it.id)}</span></span><div class="outw"><span>Put out</span><div class="step sm"><button data-o="-1" aria-label="Fewer ${esc(full(it))} put out">−</button><input data-out inputmode="numeric" pattern="[0-9]*" value="${outOf(it.id)}" aria-label="${esc(full(it))} ${esc(it.size)} put out"><button data-o="1" aria-label="More ${esc(full(it))} put out">+</button></div></div></div>`}).join("")+`</div>`;
   }
   $pull.innerHTML=html;
 }
-$pull.addEventListener("click",e=>{const b=e.target.closest(".pi"); if(!b) return; const id=b.dataset.id; if(state.done[id]) delete state.done[id]; else state.done[id]=true; save(); renderPull();});
+// Need line: what was counted, what's in the back, and how short the put-out number is
+function needHtml(id){
+  const need=state.qty[id]||0, b=isBack()?invOf(id):null, o=outOf(id);
+  return `Need ${need}`+(b!=null?` · ${b} in back`:"")+(o<need?` · <b class="short">${need-o} short</b>`:"");
+}
+function pullSummary(){
+  const list=pulled(), need=list.reduce((s,it)=>s+state.qty[it.id],0), out=list.reduce((s,it)=>s+outOf(it.id),0), doneN=list.filter(it=>state.done[it.id]).length;
+  document.getElementById("pullsummary").textContent=list.length?`${list.length} items · ${need} needed · ${out} put out · ${doneN} pulled. Change "Put out" if you couldn't put out what was needed.`:"";
+}
+function setOut(id,n){
+  state.out[id]=Math.max(0,Math.min(99,n|0)); save();
+  const row=$pull.querySelector(`.pi[data-id="${id}"]`);
+  if(row){const inp=row.querySelector("input[data-out]"); if(document.activeElement!==inp) inp.value=state.out[id];}
+  const nd=document.getElementById("nd-"+id); if(nd) nd.innerHTML=needHtml(id);
+  pullSummary();
+}
+$pull.addEventListener("click",e=>{
+  const ob=e.target.closest("button[data-o]");
+  if(ob){const id=ob.closest(".pi").dataset.id; setOut(id,outOf(id)+Number(ob.dataset.o));return;}
+  const ck=e.target.closest(".ck"); if(!ck) return;
+  const id=ck.closest(".pi").dataset.id;
+  if(state.done[id]) delete state.done[id]; else {state.done[id]=true; if(!(id in state.out)) state.out[id]=outOf(id);}
+  save(); renderPull();
+});
+$pull.addEventListener("input",e=>{if(e.target.hasAttribute&&e.target.hasAttribute("data-out")){const v=e.target.value.trim(); if(v!=="") setOut(e.target.closest(".pi").dataset.id,parseInt(v,10)||0);}});
+$pull.addEventListener("focusin",e=>{if(e.target.tagName==="INPUT") e.target.select();});
 // Groups items by category then brand (same order as Fill in); heaviest packs first within a brand
 function byBrand(list){return grouped(list);}
 function listText(){
   const head=storeLabel(store.stores.find(s=>s.id===ctx.slice(ctx.indexOf(":")+1))).toUpperCase()+(ctx.startsWith("store:")?" TRUCK DAY":" BACKSTOCK");
   let out=`${head} ${new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}\n`;
   for(const [cat,b,its] of byBrand(pulled())){
-    out+=`\n${(b===NA?"NON-ALCOHOLIC":b.toUpperCase())}\n`+its.map(it=>`- ${b===NA?full(it)+" ":it.flavor?it.flavor+" ":""}${it.size}: ${state.qty[it.id]}${state.note[it.id]?" ("+state.note[it.id]+")":""}`).join("\n")+"\n";
+    out+=`\n${(b===NA?"NON-ALCOHOLIC":b.toUpperCase())}\n`+its.map(it=>`- ${b===NA?full(it)+" ":it.flavor?it.flavor+" ":""}${it.size}: ${state.qty[it.id]}${isBack()&&invOf(it.id)!=null&&invOf(it.id)<state.qty[it.id]?` (only ${invOf(it.id)} in back)`:""}${state.note[it.id]?" ("+state.note[it.id]+")":""}`).join("\n")+"\n";
   }
   return out.trim();
 }
@@ -826,7 +890,7 @@ document.getElementById("copy").addEventListener("click",()=>{
   try{navigator.clipboard.writeText(txt).then(()=>{fb.hidden=true;toast("Copied. Paste it in a text");},fallback);}catch(e){fallback();}
 });
 armButton(document.getElementById("clearcounts"),"Clear counts","Tap again to clear counts",()=>{
-  state.qty={};state.done={};state.seen={};state.note={};save();renderFill();renderPull();toast("Counts and checks cleared");
+  state.qty={};state.done={};state.seen={};state.note={};state.out={};save();renderFill();renderPull();toast("Counts and checks cleared");
 });
 
 /* ---------- Add sheet ---------- */
@@ -853,7 +917,7 @@ function renderResults(){
 $as.addEventListener("input",renderResults);
 $res.addEventListener("click",e=>{
   const b=e.target.closest(".res"); if(!b) return; const id=b.dataset.id, it=byId[id];
-  if(onList(id)){state.list=state.list.filter(x=>x!==id);delete state.qty[id];delete state.done[id];delete state.seen[id];delete state.note[id];toast("Removed "+full(it));}
+  if(onList(id)){state.list=state.list.filter(x=>x!==id);delete state.qty[id];delete state.done[id];delete state.seen[id];delete state.note[id];delete state.out[id];toast("Removed "+full(it));}
   else{state.list.push(id);toast("Added "+full(it)+" ("+it.size+")");}
   save();renderResults();updateTotals();
 });
@@ -930,7 +994,7 @@ function openList(c){
   document.getElementById("date").textContent=truck?"Truck Day":"Backstock";
   document.getElementById("fillhint").textContent=truck
     ?"Tap + for how many of each can go out on the floor. Tick the box once you've checked it. Everything saves on this phone."
-    :"Tick the box once you've looked at it on the floor. Tap + for how many you need. Everything saves on this phone.";
+    :"Tick the box once you've looked at it on the floor. Tap + for how many you need, and put how many are in back stock under it. Everything saves on this phone.";
   $search.value=""; document.getElementById("copyfallback").hidden=true;
   showScreen("list"); show("fill"); renderFill();
 }
@@ -1004,11 +1068,14 @@ document.getElementById("editname").addEventListener("click",openName);
 /* ---------- History: every "Finish & save" on a pull list, totalled by store, week, month and product ---------- */
 armButton(document.getElementById("finish"),"Finish & save to history","Tap again to save and clear counts",()=>{
   const list=pulled(); if(!list.length){toast("Nothing to save yet");return;}
-  const sid=ctx.slice(ctx.indexOf(":")+1), st=store.stores.find(s=>s.id===sid), items={};
-  list.forEach(it=>{items[it.id]=state.qty[it.id];});
-  store.history.push({t:Date.now(),sid,sname:st?st.name:"Store",kind:ctx.startsWith("store:")?"truck":"backstock",user:store.me?store.me.first+" "+store.me.last:"",items});
+  const sid=curSid(), st=store.stores.find(s=>s.id===sid), items={}, need={}, back=isBack(); let took=0;
+  // History keeps what actually went out (items) next to what was needed (need)
+  list.forEach(it=>{const o=outOf(it.id); need[it.id]=state.qty[it.id]; if(o>0) items[it.id]=o;
+    // What went out of the back comes off this store's back stock
+    if(back&&o>0&&invOf(it.id)!=null){store.inv[sid][it.id]={n:Math.max(0,invOf(it.id)-o),t:Date.now()};took++;}});
+  store.history.push({t:Date.now(),sid,sname:st?st.name:"Store",kind:back?"backstock":"truck",user:store.me?store.me.first+" "+store.me.last:"",items,need});
   if(store.history.length>600) store.history=store.history.slice(-600);
-  state.qty={};state.done={};state.seen={};state.note={};save();renderFill();renderPull();toast("Saved to history. Counts cleared.");
+  state.qty={};state.done={};state.seen={};state.note={};state.out={};save();renderFill();renderPull();toast("Saved what went out to history."+(took?" Back stock updated.":"")+" Counts cleared.");
 });
 function agg(es){
   const o={total:0,items:{},stores:{}};
