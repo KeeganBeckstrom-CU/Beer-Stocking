@@ -72,6 +72,22 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rm{flex:none;font:600 13px var(--body);padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--muted);cursor:pointer}
 .rm.arm{background:var(--danger);color:#fff;border-color:var(--danger)}
 #storeform{margin-top:20px}
+/* store cards in each chain's own colors, logo on top */
+.choice.brand{grid-template-columns:minmax(0,1fr);background:var(--sb);border-color:color-mix(in srgb,var(--sb) 75%,#000);color:#fff;padding:14px 16px 16px}
+.choice.brand>b,.choice.brand>span{grid-column:1}
+.choice.brand>span{color:rgba(255,255,255,.85)}
+.choice.brand>b small{font-size:20px;color:var(--sa);margin-left:4px;letter-spacing:.04em}
+.choice.brand~.rm{border-color:color-mix(in srgb,var(--sb) 40%,var(--line))}
+.slogo{display:flex;align-items:center;gap:7px;height:38px;font-style:normal}
+.slogo img{width:auto;height:auto;max-height:34px;max-width:140px;display:block}
+.slogo.buschs{height:46px}.slogo.buschs img{max-height:46px}
+.slogo.walmart img{max-height:30px}
+.slogo em{font:700 22px/1 var(--body);font-style:normal;color:#fff;letter-spacing:-.01em}
+.titlerow h1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.titlerow h1 small{font-size:18px;color:var(--accent);letter-spacing:.04em}
+.slogo.tl{height:30px}.slogo.tl img{max-height:26px;max-width:92px}
+.slogo.tl.buschs{height:34px}.slogo.tl.buschs img{max-height:34px}
+.slogo.tl.walmart img{max-height:24px}.slogo.tl em{font-size:18px}
 /* pictures: cut-out product photos and logos sit straight on the backdrop, lifted by a soft shadow */
 .ph{flex:none;width:44px;height:60px;display:grid;place-items:center}
 .ph>img{width:auto;height:auto;max-width:44px;max-height:60px;object-fit:contain;display:block}
@@ -254,7 +270,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <div id="storelist" class="choices"></div>
     <form id="storeform" class="form">
       <h3>Add a store</h3>
-      <div class="field"><label for="sn">Store name</label><input id="sn" autocomplete="off" placeholder="e.g. Kroger Howell"></div>
+      <div class="field"><label for="sn">Store name</label><input id="sn" autocomplete="off" placeholder="e.g. Kroger Howell #123"></div>
       <div id="pastewrap"><div class="field"><label for="st">Paste the truck list (optional)</label><textarea id="st" autocomplete="off" placeholder="Paste the list the same way you text it, e.g.&#10;24s&#10;light: 7&#10;blue: 3&#10;miller: 11c"></textarea></div>
       <p class="hint">Paste the note and the store starts with those items and counts. Leave it blank to start from the standard truck list.</p></div>
       <p id="serr" class="err" hidden></p>
@@ -353,8 +369,8 @@ Seltzers / Hard Teas / FMBs
 White Claw = Variety @ 24, VP1 @ 12 can, VP2 @ 12 can, VP3 @ 12 can, Surge VP1 @ 12 can, Surge VP2 @ 12 can, Black Cherry @ 12 can, Black Cherry @ 6 can, Mango @ 6 can, Pineapple @ 6 can, Peach @ 6 can, Green Apple @ 6 can, Ruby Grapefruit @ 6 can, Blackberry @ 6 can, Grape @ 6 can, Clawtail @ 6 can
 Truly = Day Dream @ 24, Paradise @ 12 can, Berry @ 12 can, Lemonade @ 12 can, Punch @ 12 can, Strawberry Lemonade @ 12 can, Sunset Mix @ 12 can, Star Squad @ 12 can, Unruly @ 12 can, Unruly Lemonade @ 12 can
 Twisted Tea = Original @ 24 can, Original @ 18 can, Original @ 12 can, Light @ 12 can, Party Pack @ 12 can, Party Pack Light @ 12 can, Half & Half @ 12 can, Extreme @ 12 can
-Sun Cruiser = Iced Tea + Vodka @ 12 can, Lemonade + Vodka @ 12 can, Sampler @ 12 can
-Surfside = Iced Tea @ 12 can, Lemonade @ 12 can, Half & Half @ 12 can, Green Tea @ 12 can, Lemonade @ 4 can
+Sun Cruiser = Iced Tea + Vodka @ 12 can, Lemonade + Vodka @ 12 can, Lemonade + Vodka @ 8 can, Sampler @ 12 can
+Surfside = Iced Tea @ 12 can, Lemonade @ 12 can, Lemonade @ 8 can, Half & Half @ 12 can, Green Tea @ 12 can, Lemonade @ 4 can
 Super Lyte = @ 8 can
 Vizzy = Vibrant Tropical @ 12 can, Cream Pop @ 12 can, Refreshingly Berry @ 12 can
 Lone River = @ 12 can, @ 6 can
@@ -366,10 +382,10 @@ Cayman Jack = Margarita @ 12 btl, Green 0 Sugar @ 12 can, Blue @ 12 can, Margari
 Seagram's = Jamaican Me Happy @ 4 btl, Variety @ 12 btl, @ 12 can
 Captain Morgan = @ 12 can
 Angry Orchard = @ 12 can, @ 12 btl, @ 6 btl
-Jack Daniel's = Party Pack @ 12 can
+Jack Daniel's = Party Pack @ 12 can, Downhome Punch @ 6 btl
 Not Your Father's = Root Beer @ 6 btl
 Non-Alcoholic
-Athletic = Run Wild @ 12 can, Run Wild @ 6 can, Upside Dawn @ 12 can, Upside Dawn @ 6 can, Free Wave @ 12 can, Free Wave @ 6 can, Lite @ 12 can, Lite @ 6 can, Atletica @ 6 can, Lime @ 6 can
+Athletic = Run Wild @ 12 can, Run Wild @ 6 can, Upside Dawn @ 12 can, Upside Dawn @ 6 can, Free Wave @ 12 can, Free Wave @ 6 can, Lite @ 12 can, Lite @ 6 can, Atletica @ 6 can, Lime @ 6 can, Paloma @ 4 can
 Heineken 0.0 = @ 12 can, @ 12 btl, @ 6 btl
 Blue Moon NA = @ 12 can, @ 6 can
 Labatt Blue NA = @ 12 can, @ 6 can
@@ -591,6 +607,8 @@ if(!Array.isArray(store.stores)) store.stores=[];
 // The first store was named Kroger Brighton by mistake; rename it wherever it was already saved (its list and counts stay)
 store.stores.forEach(s=>{if(s.id==="kroger-brighton"&&s.name==="Kroger Brighton") s.name="Kroger Hamburg";});
 if(!Array.isArray(store.custom)) store.custom=[];
+// "Downtown Punch" was typed in on a phone; the drink is Jack Daniel's Downhome Punch, now built in (its counts move over below)
+store.custom=store.custom.filter(([b,f])=>!(/jack daniel/i.test(b)&&/downtown punch/i.test(f)));
 store.custom.forEach(([b,f,s])=>{ensureBrand(b);addCat(b,f,s,true);});
 // One-time: store lists made before the truck day note was built in switch over to it (counts on matching items stay)
 if(store.truckV!==2){
@@ -605,13 +623,37 @@ if(!Array.isArray(store.history)) store.history=[];
 // The old single Backstock list now belongs to the first store
 if(store.lists.backstock){ if(store.stores[0]&&!store.lists["backstock:"+store.stores[0].id]) store.lists["backstock:"+store.stores[0].id]=store.lists.backstock; delete store.lists.backstock; }
 // Items whose pack changed: Super Lyte is an 8 can, Mike's Original and Black Cherry six-packs are cans
-const ID_RENAME={"super-lyte-12-can":"super-lyte-8-can","mike-s-original-6-btl":"mike-s-original-6-can","mike-s-black-cherry-6-btl":"mike-s-black-cherry-6-can"};
+const ID_RENAME={"jack-daniel-s-downtown-punch-6-btl":"jack-daniel-s-downhome-punch-6-btl","super-lyte-12-can":"super-lyte-8-can","mike-s-original-6-btl":"mike-s-original-6-can","mike-s-black-cherry-6-btl":"mike-s-black-cherry-6-can"};
 // Every store's Backstock list starts empty; nothing is pre-loaded.
 // One-time: take the old 57-item back-stock sheet off any store that was given it, keeping anything with a count or a check
 if(store.bsV!==3){
   for(const k in store.lists) if(k.startsWith("backstock:")){const l=store.lists[k];
     l.list=(l.list||[]).filter(id=>!DEFAULT.includes(id)||(l.qty&&l.qty[id])||(l.seen&&l.seen[id]));}
   store.bsV=3;
+}
+// Store chains: logo ("s:<chain>" in beer-img.js) and colors taken from each chain's own website
+const CHAINS={
+  kroger:{name:"Kroger",bg:"#0e51a1",accent:"#ffffff"},
+  meijer:{name:"Meijer",bg:"#db232d",accent:"#ffffff",dot:"#0c60a5"},
+  walmart:{name:"Walmart",bg:"#0053e2",accent:"#ffc220"},
+  buschs:{name:"Busch's",bg:"#241f21",accent:"#8cc63f"}
+};
+const chainOf=name=>{const n=name.toLowerCase(); return /kroger/.test(n)?"kroger":/meijer/.test(n)?"meijer":/wal-?mart/.test(n)?"walmart":/bu(s)?ch'?s|bush'?s/.test(n)?"buschs":"";};
+// The Livingston County stores: [chain, town, store #]
+const STORES=[["meijer","Hartland","245"],["kroger","Hartland","444"],["meijer","Howell","172"],["walmart","Howell","1754"],["kroger","Brighton","638"],["kroger","Hamburg","721"],["buschs","Pinckney","1051"]];
+// One-time: reset the store list to the Livingston stores. Kroger Hamburg keeps its id, lists and counts;
+// any other old store with the same name as a new one keeps its lists too. Everything else is cleared.
+if(store.storesV!==2){
+  const next=STORES.map(([c,town,num])=>({id:c==="kroger"&&town==="Hamburg"?"kroger-brighton":c+"-"+slug(town)+"-"+num,name:CHAINS[c].name+" "+town,chain:c,town,num}));
+  const lists={};
+  store.stores.forEach(o=>{const m=next.find(s=>s.id===o.id||s.name.toLowerCase()===String(o.name).toLowerCase());
+    if(m) ["store:","backstock:"].forEach(p=>{if(store.lists[p+o.id]) lists[p+m.id]=store.lists[p+o.id];});});
+  store.lists=lists; store.stores=next; store.storesV=2;
+}
+// One-time: history saved under a renamed item id moves to the new id
+if(store.histV!==2){
+  store.history.forEach(e=>{for(const o in ID_RENAME) if(e.items&&o in e.items){e.items[ID_RENAME[o]]=(e.items[ID_RENAME[o]]||0)+e.items[o]; delete e.items[o];}});
+  store.histV=2;
 }
 // Lists are kept per store: "backstock:<store id>" for Backstock, "store:<store id>" (truck day), which starts from the truck day note
 function getList(c){
@@ -770,7 +812,7 @@ $pull.addEventListener("click",e=>{const b=e.target.closest(".pi"); if(!b) retur
 // Groups items by category then brand (same order as Fill in); heaviest packs first within a brand
 function byBrand(list){return grouped(list);}
 function listText(){
-  const head=document.getElementById("listtitle").textContent.toUpperCase()+(ctx.startsWith("store:")?" TRUCK DAY":" BACKSTOCK");
+  const head=storeLabel(store.stores.find(s=>s.id===ctx.slice(ctx.indexOf(":")+1))).toUpperCase()+(ctx.startsWith("store:")?" TRUCK DAY":" BACKSTOCK");
   let out=`${head} ${new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}\n`;
   for(const [cat,b,its] of byBrand(pulled())){
     out+=`\n${(b===NA?"NON-ALCOHOLIC":b.toUpperCase())}\n`+its.map(it=>`- ${b===NA?full(it)+" ":it.flavor?it.flavor+" ":""}${it.size}: ${state.qty[it.id]}${state.note[it.id]?" ("+state.note[it.id]+")":""}`).join("\n")+"\n";
@@ -855,6 +897,7 @@ document.getElementById("tab-pull").addEventListener("click",()=>show("pull"));
 /* ---------- Screens: home, Truck Day stores, list ---------- */
 function showScreen(name){
   ["auth","home","stores","list"].forEach(s=>{document.getElementById("screen-"+s).hidden=s!==name;});
+  if(name!=="list") brandOn(null);
   if(name==="home") renderHome();
   if(name==="stores") renderStores();
   window.scrollTo(0,0);
@@ -881,7 +924,9 @@ function showStores(m){
 function openList(c){
   ctx=c; state=getList(c);
   const truck=c.startsWith("store:"), sid=c.slice(c.indexOf(":")+1), st=store.stores.find(s=>s.id===sid);
-  document.getElementById("listtitle").textContent=st?st.name:"Store";
+  const ch=st&&st.chain&&CHAINS[st.chain], h1=document.getElementById("listtitle");
+  h1.innerHTML=ch?`<i class="slogo tl ${st.chain}" aria-hidden="true">${chainLogo(st.chain)}</i><span><span class="sr">${esc(ch.name)} </span>${esc(st.town||st.name)}${st.num?` <small>#${esc(st.num)}</small>`:""}</span>`:esc(st?st.name:"Store");
+  brandOn(st);
   document.getElementById("date").textContent=truck?"Truck Day":"Backstock";
   document.getElementById("fillhint").textContent=truck
     ?"Tap + for how many of each can go out on the floor. Tick the box once you've checked it. Everything saves on this phone."
@@ -889,10 +934,18 @@ function openList(c){
   $search.value=""; document.getElementById("copyfallback").hidden=true;
   showScreen("list"); show("fill"); renderFill();
 }
+// Store pictures and colors: chainLogo() is the chain's logo; brandOn() paints the header in the store's colors (null puts the app colors back)
+const chainLogo=c=>{const src=IMG["s:"+c], img=src?`<img src="${src}" alt="">`:""; return c==="walmart"?img+"<em>Walmart</em>":(img||`<em>${esc(CHAINS[c].name)}</em>`);};
+const storeLabel=st=>st?st.name+(st.num?" #"+st.num:""):"Store";
+function brandOn(st){
+  const c=st&&st.chain&&CHAINS[st.chain], r=document.documentElement.style, m=document.querySelector('meta[name="theme-color"]');
+  if(c){r.setProperty("--head",c.bg);r.setProperty("--accent",c.accent);}else{r.removeProperty("--head");r.removeProperty("--accent");}
+  if(m) m.content=c?c.bg:"#1b3a8f";
+}
 let armedStore=null;
 function renderStores(){
   const el=document.getElementById("storelist");
-  el.innerHTML=store.stores.length?store.stores.map(s=>`<div class="storerow"><button class="choice" data-store="${esc(s.id)}"><b>${esc(s.name)}</b><span>${summary(prefix()+s.id)}</span></button><button class="rm${armedStore===s.id?" arm":""}" data-rm="${esc(s.id)}" aria-label="Remove ${esc(s.name)}">${armedStore===s.id?"Tap again":"Remove"}</button></div>`).join("")
+  el.innerHTML=store.stores.length?store.stores.map(s=>{const c=s.chain&&CHAINS[s.chain]; return `<div class="storerow"><button class="choice${c?" brand":""}" data-store="${esc(s.id)}"${c?` style="--sb:${c.bg};--sa:${c.accent}"`:""}>${c?`<i class="slogo ${s.chain}" aria-hidden="true">${chainLogo(s.chain)}</i><b><span class="sr">${esc(c.name)} </span>${esc(s.town||s.name)}${s.num?` <small>#${esc(s.num)}</small>`:""}</b>`:`<b>${esc(s.name)}</b>`}<span>${summary(prefix()+s.id)}</span></button><button class="rm${armedStore===s.id?" arm":""}" data-rm="${esc(s.id)}" aria-label="Remove ${esc(s.name)}">${armedStore===s.id?"Tap again":"Remove"}</button></div>`;}).join("")
     :`<div class="empty">No stores yet. Add one below.</div>`;
 }
 document.getElementById("storelist").addEventListener("click",e=>{
@@ -908,7 +961,11 @@ document.getElementById("storelist").addEventListener("click",e=>{
 });
 document.getElementById("storeform").addEventListener("submit",e=>{
   e.preventDefault();
-  const inp=document.getElementById("sn"), err=document.getElementById("serr"), name=inp.value.trim();
+  const inp=document.getElementById("sn"), err=document.getElementById("serr"), typed=inp.value.trim();
+  // "Kroger Howell #123" -> chain kroger, town Howell, store # 123
+  const num=(typed.match(/#\s*(\d+)/)||[])[1]||"", chain=chainOf(typed);
+  const town=chain?typed.replace(/#\s*\d+/,"").replace(/\b(kroger|meijer|wal-?mart|bu(s)?ch'?s|bush'?s)\b/i,"").replace(/\s+/g," ").trim():"";
+  const name=chain?(CHAINS[chain].name+(town?" "+town:"")):typed.replace(/#\s*\d+/,"").trim()||typed;
   if(!name){err.textContent="Type the store name first.";err.hidden=false;return;}
   if(store.stores.some(s=>s.name.toLowerCase()===name.toLowerCase())){err.textContent="That store is already on the list.";err.hidden=false;return;}
   const ta=document.getElementById("st"); let parsed=null;
@@ -918,7 +975,7 @@ document.getElementById("storeform").addEventListener("submit",e=>{
   }
   err.hidden=true;
   const id=slug(name)+"-"+Date.now().toString(36);
-  store.stores.push({id,name});
+  store.stores.push(chain?{id,name,chain,town:town||CHAINS[chain].name,num}:{id,name,num});
   if(parsed){const seen={}; Object.keys(parsed.qty).forEach(k=>{seen[k]=true;});
     store.lists["store:"+id]={list:parsed.ids,qty:parsed.qty,done:{},seen,note:parsed.note};}
   save();inp.value="";ta.value="";
