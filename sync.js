@@ -17,7 +17,7 @@ const int=v=>v==null||v===""?null:(v|0);
 const N={ // one shape per table, so a row from this phone and the same row from Supabase compare equal
   stores:r=>({id:r.id,name:r.name||"",chain:r.chain||null,town:r.town||null,num:r.num||null,county:r.county||null,pos:r.pos|0}),
   routes:r=>({id:r.id,name:r.name||"",county:r.county||null,store_ids:Array.isArray(r.store_ids)?r.store_ids.slice():[],pos:r.pos|0}),
-  schedule:r=>({id:r.id,user_id:r.user_id,route_id:r.route_id,day:r.day|0}),
+  schedule:r=>({id:r.id,user_id:r.user_id,route_id:r.route_id,day:r.day|0,kind:r.kind==="truck"?"truck":"backstock"}),
   custom_items:r=>({id:r.id,brand:r.brand,flavor:r.flavor||"",size:r.size}),
   list_items:r=>({store_id:r.store_id,kind:r.kind,item_id:r.item_id,pos:r.pos|0,qty:r.qty|0,floor:int(r.floor),seen:!!r.seen,done:!!r.done,out:int(r.out),note:r.note||null}),
   shelf:r=>({store_id:r.store_id,item_id:r.item_id,cap:r.cap|0}),
@@ -52,7 +52,7 @@ function listOf(sid,kind){const c=prefOf(kind)+sid; return store.lists[c]||(stor
 function applyRow(t,r){
   if(t==="routes"){const o={id:r.id,name:r.name,county:r.county||undefined,store_ids:(r.store_ids||[]).slice(),pos:r.pos}, i=store.routes.findIndex(x=>x.id===r.id);
     if(i<0) store.routes.push(o); else store.routes[i]=o; store.routes.sort((a,b)=>(a.pos??0)-(b.pos??0));}
-  else if(t==="schedule"){const o={id:r.id,user_id:r.user_id,route_id:r.route_id,day:r.day}, i=store.schedule.findIndex(x=>x.id===r.id); if(i<0) store.schedule.push(o); else store.schedule[i]=o;}
+  else if(t==="schedule"){const o={id:r.id,user_id:r.user_id,route_id:r.route_id,day:r.day,kind:r.kind==="truck"?"truck":"backstock"}, i=store.schedule.findIndex(x=>x.id===r.id); if(i<0) store.schedule.push(o); else store.schedule[i]=o;}
   else if(t==="stores"){const o={id:r.id,name:r.name,chain:r.chain||undefined,town:r.town||undefined,num:r.num||undefined,county:r.county||undefined,pos:r.pos}, i=store.stores.findIndex(s=>s.id===r.id);
     if(i<0) store.stores.push(o); else store.stores[i]=Object.assign(store.stores[i],o);
     store.stores.sort((a,b)=>(a.pos??0)-(b.pos??0));}
@@ -95,7 +95,7 @@ function status(s){pill.hidden=s==="ok"; pill.textContent=s==="saving"?"Savingâ€
 
 /* ---------- Sending changes ---------- */
 let flushing=false, again=false, timer=0;
-window.onSave=()=>{if(!user) return; clearTimeout(timer); status("saving"); timer=setTimeout(flush,500);};
+window.onSave=()=>{if(!user||window.DEMO) return; clearTimeout(timer); status("saving"); timer=setTimeout(flush,500);};
 async function flush(){
   if(!user||!sb) return;
   if(flushing){again=true;return;}
@@ -107,12 +107,17 @@ async function flush(){
       if(t==="pulls"){const ins=up.filter(([k])=>!(k in synced.pulls));
         for(let i=0;i<ins.length;i+=200){const part=ins.slice(i,i+200); const {error}=await sb.from(t).upsert(part.map(x=>x[1]),{onConflict:"id",ignoreDuplicates:true}); if(error) throw error; part.forEach(([k,,j])=>{synced.pulls[k]=j;}); sent+=part.length;}
         continue;}
-      for(let i=0;i<up.length;i+=400){const part=up.slice(i,i+400); const {error}=await sb.from(t).upsert(part.map(x=>x[1]),{onConflict:PK[t]}); if(error) throw error; part.forEach(([k,,j])=>{synced[t][k]=j;}); sent+=part.length;}
+      for(let i=0;i<up.length;i+=400){const part=up.slice(i,i+400); const {error}=await sb.from(t).upsert(part.map(x=>x[1]),{onConflict:PK[t]});
+        if(error&&denied(error)){part.forEach(([k])=>undo(t,k)); continue;}
+        if(error) throw error; part.forEach(([k,,j])=>{synced[t][k]=j;}); sent+=part.length;}
     }
     // Deletes after everything else is in (stores last, since their lists go with them)
     for(const t of ["schedule","list_items","shelf","back_stock","custom_items","routes","stores"]){
       const gone=Object.keys(synced[t]).filter(k=>!(k in L[t])); if(!gone.length) continue;
-      if(t==="stores"||t==="custom_items"||t==="routes"||t==="schedule"){const {error}=await sb.from(t).delete().in("id",gone); if(error) throw error;}
+      if(t==="stores"||t==="custom_items"||t==="routes"||t==="schedule"){const {data,error}=await sb.from(t).delete().in("id",gone).select("id");
+        if(error&&!denied(error)) throw error;
+        // Rows the database wouldn't let this person delete come back
+        if(t==="routes"||t==="schedule"){const done=new Set((data||[]).map(r=>r.id)); gone.filter(k=>!done.has(k)).forEach(k=>undo(t,k)); gone.splice(0,gone.length,...gone.filter(k=>done.has(k)));}}
       else{const groups={}; gone.forEach(k=>{const p=k.split("|"), g=p.slice(0,-1).join("|"); (groups[g]=groups[g]||[]).push(p[p.length-1]);});
         for(const g in groups){const p=g.split("|"); let q=sb.from(t).delete().eq("store_id",p[0]); if(t==="list_items") q=q.eq("kind",p[1]);
           for(let i=0;i<groups[g].length;i+=200){const {error}=await q.in("item_id",groups[g].slice(i,i+200)); if(error) throw error;}}}
@@ -126,6 +131,10 @@ async function flush(){
 window.addEventListener("online",()=>{if(user){loadAll();}});
 window.addEventListener("offline",()=>status("offline"));
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&user) loadAll();});
+
+// Only the admin and managers can change routes and the schedule; anything else is put back the way it was
+const denied=e=>e&&(e.code==="42501"||/row-level security|permission denied/i.test(e.message||""));
+function undo(t,k){const j=synced[t][k]; if(j) applyRow(t,JSON.parse(j)); else removeRow(t,k); keepLocal(); clearTimeout(undo.h); undo.h=setTimeout(()=>{toast("Only the admin or a manager can change the schedule and routes"); refreshView();},100);}
 
 /* ---------- Getting everyone's data ---------- */
 async function fetchAll(t){
@@ -141,7 +150,7 @@ async function fetchAll(t){
 let loading=null;
 function loadAll(){if(!loading) loading=doLoad().finally(()=>{loading=null;}); return loading;}
 async function doLoad(){
-  if(!user||!sb) return;
+  if(!user||!sb||window.DEMO) return;
   let remote={};
   try{ for(const t of ["custom_items",...TABLES.filter(t=>t!=="custom_items")]) remote[t]=await fetchAll(t); await loadPeople(); }
   catch(e){console.warn("load",e); status("offline"); return;}
@@ -159,8 +168,9 @@ async function doLoad(){
 
 // Everyone with an account, for the schedule (read only here; each person edits their own name)
 async function loadPeople(){
-  const {data,error}=await sb.from("profiles").select("id,first,last").order("first"); if(error) throw error;
-  store.people=data.map(p=>({id:p.id,first:p.first,last:p.last}));
+  const {data,error}=await sb.from("profiles").select("id,first,last,role").order("first"); if(error) throw error;
+  store.people=data.map(p=>({id:p.id,first:p.first,last:p.last,role:p.role||"employee"}));
+  const me=store.people.find(p=>p.id===store.owner); store.role=me?me.role:"employee";
 }
 
 /* ---------- Live changes from other phones ---------- */
@@ -173,6 +183,7 @@ function subscribe(){
   channel.subscribe(st=>{if(st==="SUBSCRIBED") loadAll();});
 }
 function drain(){
+  if(window.DEMO) return; // changes wait until the sample week is closed (it reloads the real data)
   const evs=queue; queue=[]; if(!evs.length) return;
   const L=localRows();
   for(const [t,ev] of evs){
@@ -186,6 +197,7 @@ function drain(){
 }
 let refreshLater=false;
 function refreshView(){
+  if(window.DEMO) return;
   const vis=n=>!document.getElementById("screen-"+n).hidden, a=document.activeElement;
   if(a&&a.tagName==="INPUT"&&a.closest("#fill,#pull,#shelflist,#screen-sched")){refreshLater=true; return;} // don't redraw under someone's thumb
   refreshLater=false;
@@ -197,6 +209,19 @@ function refreshView(){
   if(vis("sched")) renderSched();
 }
 document.addEventListener("focusout",()=>{setTimeout(()=>{if(refreshLater) refreshView();},50);});
+
+async function saveProfile(id,first,last){
+  const {data,error}=await sb.from("profiles").update({first,last}).eq("id",id).select("id");
+  if(error) throw error;
+  if(!data||!data.length){const r=await sb.from("profiles").insert({id,first,last}); if(r.error) throw r.error;}
+}
+// Admin only: the database refuses anyone else
+window.setRole=async(id,role)=>{
+  if(window.DEMO){const p=store.people.find(x=>x.id===id); if(p) p.role=role; return;}
+  if(!sb) throw new Error("offline");
+  const {error}=await sb.rpc("set_role",{target:id,new_role:role}); if(error) throw error;
+  await loadPeople(); keepLocal();
+};
 
 /* ---------- Accounts ---------- */
 let amode="in";
@@ -233,7 +258,7 @@ $("authform").addEventListener("submit",async e=>{
   if(amode!=="in"&&(!first||!last)){say("Type your first and last name.");return;}
   if(amode==="name"){
     store.me={first,last}; keepLocal(); showScreen("home");
-    if(sb&&user){const {error}=await sb.from("profiles").upsert({id:user.id,first,last}); if(error) toast("Name saved on this phone; it will update for everyone next time you're online"); sb.auth.updateUser({data:{first,last}}).catch(()=>{});}
+    if(sb&&user){let error=null; try{await saveProfile(user.id,first,last);}catch(e){error=e;} if(error) toast("Name saved on this phone; it will update for everyone next time you're online"); sb.auth.updateUser({data:{first,last}}).catch(()=>{});}
     return;
   }
   if(!sb){say("Can't reach the server. Check your signal and try again.");return;}
@@ -244,7 +269,7 @@ $("authform").addEventListener("submit",async e=>{
       if(pw.length<6){say("Your password needs at least 6 characters.");return;}
       const {data,error}=await sb.auth.signUp({email,password:pw,options:{data:{first,last}}}); if(error) throw error;
       if(!data.session){say("Account made. Tap Sign in to go in.");openAuth("in");return;}
-      await sb.from("profiles").upsert({id:data.user.id,first,last});
+      try{await saveProfile(data.user.id,first,last);}catch(e){}
       await signedIn(data.user,{first,last});
     }else{
       const {data,error}=await sb.auth.signInWithPassword({email,password:pw}); if(error) throw error;
@@ -268,8 +293,10 @@ async function signedIn(u,names){
   if(!first){try{const {data}=await sb.from("profiles").select("first,last").eq("id",u.id).maybeSingle(); if(data){first=data.first; last=data.last;}}catch(e){}}
   if(!first){const m=u.user_metadata||{}; first=m.first; last=m.last;}
   if(!first&&store.me){first=store.me.first; last=store.me.last;}
-  if(first){store.me={first,last:last||""}; try{await sb.from("profiles").upsert({id:u.id,first,last:last||""});}catch(e){}}
-  store.owner=u.id; keepLocal();
+  store.owner=u.id;
+  if(first){store.me={first,last:last||""}; try{await saveProfile(u.id,first,last||"");}catch(e){}}
+  try{await loadPeople();}catch(e){}
+  keepLocal();
   $("whoami").textContent=`Signed in as ${u.email}`;
   if(!first){openAuth("name");} else showScreen("home");
   subscribe(); loadAll();

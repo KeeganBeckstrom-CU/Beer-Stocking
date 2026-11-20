@@ -151,7 +151,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .hr span{min-width:0}
 .hr b{font-variant-numeric:tabular-nums}
 .toast .undo{margin-left:12px;font:700 14px var(--body);color:var(--accent);background:transparent;border:1.5px solid currentColor;border-radius:6px;padding:4px 12px;cursor:pointer}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+/* Long route or store names in a dropdown must never push the page wider than the phone (iPhones zoom out when that happens) */
+html,body{overflow-x:clip}
+.field{min-width:0}
+select{max-width:100%;min-width:0;text-overflow:ellipsis}
 .copyright{margin:18px 0 0;text-align:center;font-size:12px;color:var(--muted)}
 .seg{display:flex;gap:4px;background:var(--line);border-radius:10px;padding:4px}
 .seg button{flex:1;font:600 15px var(--body);padding:10px;border:0;border-radius:8px;background:transparent;color:var(--ink);cursor:pointer}
@@ -178,7 +182,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .asg .x{flex:none;font:600 13px var(--body);padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
 .asg .x.arm{background:var(--danger);color:#fff;border-color:var(--danger)}
 .addasg{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
-.addasg select{flex:1;min-width:120px;font:15px var(--body);padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.addasg select{flex:1 1 40%;min-width:0;width:0;font:16px var(--body);padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
 .addasg .btn{flex:none;padding:9px 14px}
 .none{padding:10px 12px;color:var(--muted);font-size:14px}
 .route{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;padding:12px;display:grid;gap:6px;box-shadow:var(--shadow)}
@@ -188,6 +192,25 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .schip{font-size:13px;font-weight:600;padding:3px 9px;border-radius:12px;color:#fff;background:var(--sb,var(--head))}
 .formbtns{display:flex;gap:8px;flex-wrap:wrap}.formbtns .btn{flex:1}
+.cathead{display:flex;justify-content:space-between;align-items:end;gap:10px}.cathead .btn{flex:none;padding:9px 14px;margin-bottom:6px}
+.flabel{display:block;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.picks{display:flex;flex-wrap:wrap;gap:8px}
+.pick{font:600 15px var(--body);padding:10px 12px;border-radius:10px;cursor:pointer;border:2px solid var(--sb,var(--head));background:transparent;color:var(--ink);text-align:left;text-transform:none;letter-spacing:0}
+.pick.on{background:var(--sb,var(--head));color:#fff}
+.pick.on::before{content:"✓ "}
+.ktag{display:inline-block;font:700 11px var(--body);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:6px;margin-left:6px;vertical-align:1px}
+.ktag.backstock{background:var(--done);color:#fff}.ktag.truck{background:var(--hot);color:#fff}
+.addasg .kind{flex:1 1 100%}
+.role{display:flex;align-items:center;gap:10px;padding:8px 12px}.role+.role{border-top:1px solid var(--line)}
+.role span{flex:1;min-width:0}.role select{flex:none;width:auto;font:16px var(--body);padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+body:not(.lead) .lead-only,body:not(.admin) .admin-only{display:none!important}
+body.demo #editname,body.demo #signout,body.demo #syncpill{display:none!important}
+#demobar{position:relative;z-index:40;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px max(12px,env(safe-area-inset-left,0px));padding-top:calc(8px + env(safe-area-inset-top,0px));background:#13235a;color:#fff7d6;font:600 14px var(--body)}
+#demobar b{flex:1 1 100%;font-family:var(--display);font-size:17px;letter-spacing:.05em;text-transform:uppercase;color:#ffd84d}
+#demobar button{font:600 13px var(--body);padding:7px 10px;border-radius:8px;border:1px solid rgba(255,247,214,.4);background:transparent;color:#fff7d6;cursor:pointer}
+#demobar button[aria-pressed="true"]{background:#ffd84d;color:#13235a;border-color:#ffd84d}
+#demobar .exit{margin-left:auto;background:#fff7d6;color:#13235a}
+.samplebtn{margin-top:8px}
 .copyform{display:flex;align-items:end;gap:10px;margin:0 0 10px}.copyform .field{flex:1}.copyform .btn{flex:none}
 .titlerow .date{flex:none;color:var(--head-ink);opacity:.8;font-size:14px}
 .rsum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
@@ -326,6 +349,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
       <button id="go-truck" class="choice"><b>Truck Day</b><span id="home-truck-sub">Pick a store and work its truck list</span><span class="art" id="art-truck" aria-hidden="true"></span></button>
     </div>
     <div class="actions reportbtn"><button id="go-sched" class="btn">Schedule &amp; routes</button><button id="go-report" class="btn">Shortage report</button></div>
+    <button id="go-sample" class="btn wide samplebtn">View a sample week</button>
     <div id="history"></div>
     <div class="actions foot"><button id="editname" class="btn">Change name</button><button id="signout" class="btn">Sign out</button></div>
     <p class="hint" id="whoami"></p>
@@ -396,23 +420,23 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 </div>
 
 <div id="screen-sched" hidden>
-<header class="top"><div class="wrap solo"><div class="titlerow"><button id="schedback" class="backbtn">‹ Home</button><h1>Schedule</h1><span class="date" id="schedtoday"></span></div></div></header>
+<header class="top"><div class="wrap solo"><div class="titlerow"><button id="schedback" class="backbtn">‹ Home</button><h1 id="schedtitle">Schedule</h1><span class="date" id="schedtoday"></span></div></div></header>
 <main class="wrap">
-  <p class="hint">Who works which route on which day. Everyone sees the same schedule, and each person's route for today shows on their home screen.</p>
+  <p class="hint" id="schedhint">Who works which route on which day. Everyone sees the same schedule, and each person's route for today shows on their home screen.</p>
   <div class="two filters"><div class="field"><label for="scounty">County</label><select id="scounty"></select></div><div class="field"><label for="sperson">Person</label><select id="sperson"></select></div></div>
   <div id="week"></div>
-  <h2 class="cat">Routes</h2>
+  <div class="cathead"><h2 class="cat">Routes</h2><button id="newroute" class="btn lead-only">+ Add route</button></div>
   <p class="hint">A route is a group of stores worked together. Pick a route on the store list to see just its stores.</p>
-  <div id="routes"></div>
-  <button id="newroute" class="btn wide">+ New route</button>
   <form id="routeform" class="form" hidden>
     <h3 id="rftitle">New route</h3>
     <div class="two"><div class="field"><label for="rn">Route name</label><input id="rn" autocomplete="off" placeholder="e.g. Hartland · Howell"></div>
     <div class="field"><label for="rc">County</label><select id="rc"></select></div></div>
-    <div class="field"><label>Stores on this route</label><div id="rstores" class="checks"></div></div>
+    <div class="field"><span class="flabel">Stores on this route · tap to add or take off</span><div id="rstores" class="picks"></div></div>
     <p id="rerr" class="err" hidden></p>
     <div class="formbtns"><button type="button" id="rcancel" class="btn">Cancel</button><button type="button" id="rdelete" class="btn" hidden>Delete route</button><button type="submit" class="btn primary">Save route</button></div>
   </form>
+  <div id="routes"></div>
+  <div id="team" class="admin-only"></div>
 </main>
 </div>
 
@@ -808,7 +832,7 @@ const invOf=id=>{const s=store.inv[curSid()]; return s&&s[id]?s[id].n:null;};
 const outOf=id=>{if(id in state.out) return state.out[id]; const need=state.qty[id]||0, b=isBack()?invOf(id):null; return b==null?need:Math.min(need,b);};
 const prefix=()=>mode==="truck"?"store:":"backstock:";
 // save() keeps this phone's copy; onSave (sync.js) sends the changes to everyone else
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){} if(window.onSave) window.onSave();};
+const save=()=>{if(window.DEMO) return; try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){} if(window.onSave) window.onSave();};
 const full=it=>it.flavor?it.brand+" "+it.flavor:it.brand;
 // All non-alcoholic items show as one group; every other item groups under its brand
 const NA="Non-Alcoholic";
@@ -1126,8 +1150,10 @@ function renderHome(){
   document.getElementById("home-back-sub").textContent="Pick a store, check the floor and pull from back stock · "+s;
   document.getElementById("home-truck-sub").textContent="Pick a store and work its truck list · "+s;
   document.getElementById("today").textContent="Today · "+new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
-  const rs=myRoutesToday();
-  document.getElementById("myday").innerHTML=rs.length?rs.map(r=>`<div class="myday"><span>Your route today</span><b>${esc(r.name)}</b><span>${r.store_ids.map(id=>store.stores.find(x=>x.id===id)).filter(Boolean).map(x=>esc(storeLabel(x))).join(" · ")}</span><button class="btn" data-myroute="${esc(r.id)}">Open route</button></div>`).join("")
+  roleClasses();
+  document.getElementById("go-sched").textContent=isLead()?"Schedule & routes":"Schedule";
+  const as=myToday();
+  document.getElementById("myday").innerHTML=as.length?as.map(a=>{const r=routeOf(a.route_id), k=a.kind==="truck"?"truck":"backstock"; return `<div class="myday"><span>Your route today · ${KIND[k]}</span><b>${esc(r.name)}</b><span>${r.store_ids.map(id=>store.stores.find(x=>x.id===id)).filter(Boolean).map(x=>esc(storeLabel(x))).join(" · ")}</span><button class="btn" data-myroute="${esc(r.id)}" data-kind="${k}">Open route · ${KIND[k]}</button></div>`;}).join("")
     :(store.owner&&store.routes.length?`<p class="hint">Nothing on the schedule for you today.</p>`:"");
   renderHistory();
 }
@@ -1217,7 +1243,8 @@ const dayKey=t=>{const d=new Date(t); return d.getFullYear()*10000+(d.getMonth()
 const routeOf=id=>store.routes.find(r=>r.id===id);
 const personName=id=>{const p=store.people.find(x=>x.id===id); if(p) return `${p.first} ${p.last}`.trim(); return id===store.owner&&store.me?`${store.me.first} ${store.me.last}`.trim():"Someone";};
 const countyList=()=>[...new Set([...COUNTIES,...store.stores.map(s=>s.county).filter(Boolean),...store.routes.map(r=>r.county).filter(Boolean)])];
-const myRoutesToday=()=>store.owner?store.schedule.filter(a=>a.user_id===store.owner&&a.day===new Date().getDay()).map(a=>routeOf(a.route_id)).filter(Boolean):[];
+const myToday=()=>store.owner?store.schedule.filter(a=>a.user_id===store.owner&&a.day===new Date().getDay()&&routeOf(a.route_id)):[];
+const myRoutesToday=()=>[...new Set(myToday().map(a=>a.route_id))].map(routeOf);
 // The store-list filter is just for this phone
 const filt=()=>{store.filt=store.filt||{county:"",route:""}; return store.filt;};
 function shownStores(){
@@ -1265,35 +1292,60 @@ document.getElementById("prevlog").addEventListener("click",e=>{
   save(); renderFill(); toast(n?`Added ${n} item${n===1?"":"s"} from the last log`:"Those are already on today's list");
 });
 
-/* ---------- Schedule: who works which route on which day; routes are groups of stores ---------- */
-let armedAsg=null, editRoute=null;
+/* ---------- Schedule: who works which route on which day; routes are groups of stores ----------
+   Admin and managers set it up; employees see the same main schedule, read only (the database enforces this too) */
+let armedAsg=null, editRoute=null, pickIds=[];
+const isAdmin=()=>store.role==="admin"||(!store.owner&&!window.DEMO);
+const isLead=()=>isAdmin()||store.role==="manager";
+const KIND={backstock:"Backstock",truck:"Truck Day"};
+function roleClasses(){document.body.classList.toggle("lead",isLead()); document.body.classList.toggle("admin",isAdmin());}
 function openSched(){
   document.getElementById("scounty").innerHTML=countyOpts(document.getElementById("scounty").value||"",true);
   showScreen("sched"); renderSched();
 }
-function peopleList(){const ps=store.people.slice(); if(store.owner&&!ps.some(p=>p.id===store.owner)&&store.me) ps.unshift({id:store.owner,first:store.me.first,last:store.me.last}); return ps;}
+function peopleList(){const ps=store.people.slice(); if(store.owner&&!ps.some(p=>p.id===store.owner)&&store.me) ps.unshift({id:store.owner,first:store.me.first,last:store.me.last,role:store.role}); return ps;}
+const pname=p=>`${p.first} ${p.last}`.trim();
 function renderSched(){
-  const c=document.getElementById("scounty").value, sp=document.getElementById("sperson"), pv=sp.value, ps=peopleList();
-  sp.innerHTML=`<option value="">Everyone</option>`+ps.map(p=>`<option value="${esc(p.id)}"${p.id===pv?" selected":""}>${esc(`${p.first} ${p.last}`.trim())}</option>`).join("");
+  roleClasses();
+  const lead=isLead(), c=document.getElementById("scounty").value, sp=document.getElementById("sperson"), pv=sp.value, ps=peopleList();
+  document.getElementById("schedtitle").textContent=lead?"Schedule":"Main schedule";
+  document.getElementById("schedhint").textContent=lead?"Set who works which route on which day, and whether it's a Backstock day or a Truck Day. Everyone sees this schedule, and each person's route for today shows on their home screen.":"Everyone's routes for the week. Your route for today also shows on your home screen. Ask a manager to make changes.";
+  sp.innerHTML=`<option value="">Everyone</option>`+ps.map(p=>`<option value="${esc(p.id)}"${p.id===pv?" selected":""}>${esc(pname(p))}</option>`).join("");
   const p=sp.value, today=new Date().getDay(), rs=store.routes.filter(r=>!c||r.county===c);
   document.getElementById("schedtoday").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"numeric",day:"numeric"});
-  const canAdd=ps.length&&rs.length;
-  let html=canAdd?"":`<p class="hint">${!ps.length?"Sign in to assign people. Everyone shows up here once they create an account.":"Make a route below first, then assign people to it."}</p>`;
+  const canAdd=lead&&ps.length&&rs.length;
+  let html=lead&&!canAdd?`<p class="hint">${!ps.length?"People show up here once they create an account.":"Add a route below first, then assign people to it."}</p>`:"";
   for(const d of [1,2,3,4,5,6,0]){
     const as=store.schedule.filter(a=>a.day===d&&routeOf(a.route_id)&&(!p||a.user_id===p)&&(!c||routeOf(a.route_id).county===c));
     html+=`<div class="day${d===today?" now":""}"><div class="dh"><b>${DAYS[d]}</b>${d===today?`<span class="pill">Today</span>`:""}</div>`
-      +(as.length?as.map(a=>{const r=routeOf(a.route_id); return `<div class="asg"><span><b>${esc(personName(a.user_id))}</b><small>${esc(r.name)} · ${r.store_ids.length} store${r.store_ids.length===1?"":"s"}${r.county?` · ${esc(r.county)}`:""}</small></span><button class="x${armedAsg===a.id?" arm":""}" data-del="${esc(a.id)}">${armedAsg===a.id?"Tap again":"Remove"}</button></div>`;}).join(""):`<div class="none">No one scheduled.</div>`)
-      +(canAdd?`<div class="addasg"><select class="ap" aria-label="Person for ${DAYS[d]}">${ps.map(x=>`<option value="${esc(x.id)}"${x.id===p?" selected":""}>${esc(`${x.first} ${x.last}`.trim())}</option>`).join("")}</select><select class="ar" aria-label="Route for ${DAYS[d]}">${rs.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join("")}</select><button class="btn" data-add="${d}">Assign</button></div>`:"")+`</div>`;
+      +(as.length?as.map(a=>{const r=routeOf(a.route_id), k=a.kind==="truck"?"truck":"backstock"; return `<div class="asg"><span><b>${esc(personName(a.user_id))}</b><span class="ktag ${k}">${KIND[k]}</span><small>${esc(r.name)} · ${r.store_ids.length} store${r.store_ids.length===1?"":"s"}${r.county?` · ${esc(r.county)}`:""}</small></span>${lead?`<button class="x${armedAsg===a.id?" arm":""}" data-del="${esc(a.id)}">${armedAsg===a.id?"Tap again":"Remove"}</button>`:""}</div>`;}).join(""):`<div class="none">No one scheduled.</div>`)
+      +(canAdd?`<div class="addasg"><select class="ap" aria-label="Person for ${DAYS[d]}">${ps.map(x=>`<option value="${esc(x.id)}"${x.id===p?" selected":""}>${esc(pname(x))}</option>`).join("")}</select><select class="ar" aria-label="Route for ${DAYS[d]}">${rs.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join("")}</select><select class="ak" aria-label="Backstock or Truck Day on ${DAYS[d]}"><option value="backstock">Backstock</option><option value="truck">Truck Day</option></select><button class="btn" data-add="${d}">Assign</button></div>`:"")+`</div>`;
   }
   document.getElementById("week").innerHTML=html;
-  document.getElementById("routes").innerHTML=rs.length?rs.map(r=>`<div class="route"><div class="rh"><b>${esc(r.name)}</b><button class="btn" data-edit="${esc(r.id)}">Edit</button></div><span class="hint">${r.county?esc(r.county)+" County · ":""}${r.store_ids.length} store${r.store_ids.length===1?"":"s"}</span><div class="chips">${r.store_ids.map(id=>store.stores.find(s=>s.id===id)).filter(Boolean).map(s=>`<span class="schip" style="--sb:${s.chain&&CHAINS[s.chain]?CHAINS[s.chain].bg:"var(--head)"}">${esc(storeLabel(s))}</span>`).join("")}</div></div>`).join("")
-    :`<div class="empty">${c?`No routes in ${esc(c)} County yet.`:"No routes yet."} Tap <b>+ New route</b> to make one.</div>`;
+  document.getElementById("routes").innerHTML=rs.length?rs.map(r=>`<div class="route"><div class="rh"><b>${esc(r.name)}</b>${lead?`<button class="btn" data-edit="${esc(r.id)}">Edit</button>`:""}</div><span class="hint">${r.county?esc(r.county)+" County · ":""}${r.store_ids.length} store${r.store_ids.length===1?"":"s"}</span><div class="chips">${r.store_ids.map(id=>store.stores.find(s=>s.id===id)).filter(Boolean).map(s=>`<span class="schip" style="--sb:${s.chain&&CHAINS[s.chain]?CHAINS[s.chain].bg:"var(--head)"}">${esc(storeLabel(s))}</span>`).join("")}</div></div>`).join("")
+    :`<div class="empty">${c?`No routes in ${esc(c)} County yet.`:"No routes yet."}${lead?" Tap <b>+ Add route</b> to make one.":""}</div>`;
+  renderTeam();
 }
+// Admin: who is a manager
+function renderTeam(){
+  const el=document.getElementById("team"); if(!isAdmin()){el.innerHTML="";return;}
+  const ps=peopleList();
+  el.innerHTML=`<h2 class="cat">Team</h2><p class="hint">Managers can set the schedule and routes. Employees see the main schedule. Only you (the admin) can change this.</p><div class="brand">`
+    +(ps.length?ps.map(p=>`<div class="role"><span><b>${esc(pname(p))}</b>${p.id===store.owner?" <small>(you)</small>":""}</span>${p.id===store.owner?`<span class="ktag backstock">Admin</span>`:`<select data-role="${esc(p.id)}" aria-label="Role for ${esc(pname(p))}"><option value="employee"${p.role!=="manager"&&p.role!=="admin"?" selected":""}>Employee</option><option value="manager"${p.role==="manager"?" selected":""}>Manager</option><option value="admin"${p.role==="admin"?" selected":""}>Admin</option></select>`}</div>`).join(""):`<div class="none">People show up here once they create an account.</div>`)+`</div>`;
+}
+document.getElementById("team").addEventListener("change",async e=>{
+  const sel=e.target.closest("[data-role]"); if(!sel) return;
+  const p=store.people.find(x=>x.id===sel.dataset.role), was=p?p.role:"employee";
+  try{await window.setRole(sel.dataset.role,sel.value); toast(`${p?pname(p):"They"} ${sel.value==="employee"?"is an employee":"is now "+(sel.value==="admin"?"an admin":"a manager")}`);}
+  catch(err){sel.value=was; toast("Couldn't change that. Check your signal and try again");}
+  renderSched();
+});
 document.getElementById("week").addEventListener("click",e=>{
+  if(!isLead()) return;
   const add=e.target.closest("[data-add]");
-  if(add){const row=add.closest(".addasg"), d=+add.dataset.add, user_id=row.querySelector(".ap").value, route_id=row.querySelector(".ar").value;
-    if(store.schedule.some(a=>a.day===d&&a.user_id===user_id&&a.route_id===route_id)){toast("Already on the schedule");return;}
-    store.schedule.push({id:newId(),user_id,route_id,day:d}); save(); renderSched(); toast(`${personName(user_id)} · ${routeOf(route_id).name} on ${DAYS[d]}`);return;}
+  if(add){const row=add.closest(".addasg"), d=+add.dataset.add, user_id=row.querySelector(".ap").value, route_id=row.querySelector(".ar").value, kind=row.querySelector(".ak").value;
+    if(store.schedule.some(a=>a.day===d&&a.user_id===user_id&&a.route_id===route_id&&(a.kind||"backstock")===kind)){toast("Already on the schedule");return;}
+    store.schedule.push({id:newId(),user_id,route_id,day:d,kind}); save(); renderSched(); toast(`${personName(user_id)} · ${routeOf(route_id).name} · ${KIND[kind]} on ${DAYS[d]}`);return;}
   const del=e.target.closest("[data-del]"); if(!del) return;
   const id=del.dataset.del;
   if(armedAsg!==id){armedAsg=id; renderSched(); clearTimeout(renderSched.h); renderSched.h=setTimeout(()=>{armedAsg=null; renderSched();},3000); return;}
@@ -1301,31 +1353,36 @@ document.getElementById("week").addEventListener("click",e=>{
 });
 document.getElementById("scounty").addEventListener("change",renderSched);
 document.getElementById("sperson").addEventListener("change",renderSched);
-// Route editor
-function routeStoresHtml(county,checked){
-  const ss=store.stores.filter(s=>!county||s.county===county);
-  return ss.length?ss.map(s=>`<label class="chk"><input type="checkbox" value="${esc(s.id)}"${checked.includes(s.id)?" checked":""}> ${esc(storeLabel(s))}</label>`).join(""):`<p class="hint">No stores in ${esc(county)} County yet. Add them from the store list first.</p>`;
+// Route editor: tap stores (in their chain colors) to put them on or take them off
+function renderPicks(county){
+  const ss=store.stores.filter(s=>!county||s.county===county||pickIds.includes(s.id));
+  document.getElementById("rstores").innerHTML=ss.length?ss.map(s=>`<button type="button" class="pick${pickIds.includes(s.id)?" on":""}" data-pick="${esc(s.id)}" aria-pressed="${pickIds.includes(s.id)}" style="--sb:${s.chain&&CHAINS[s.chain]?CHAINS[s.chain].bg:"var(--head)"}">${esc(storeLabel(s))}</button>`).join("")
+    :`<p class="hint">No stores in ${esc(county)} County yet. Add them from the store list first.</p>`;
 }
 function openRouteForm(r){
-  editRoute=r?r.id:null; const f=document.getElementById("routeform");
+  if(!isLead()) return;
+  editRoute=r?r.id:null; pickIds=r?r.store_ids.slice():[];
+  const f=document.getElementById("routeform");
   document.getElementById("rftitle").textContent=r?"Edit route":"New route";
   document.getElementById("rn").value=r?r.name:"";
   const county=r?r.county||"":(document.getElementById("scounty").value||"Livingston");
   document.getElementById("rc").innerHTML=countyOpts(county,false);
-  document.getElementById("rstores").innerHTML=routeStoresHtml(county,r?r.store_ids:[]);
+  renderPicks(county);
   document.getElementById("rdelete").hidden=!r; document.getElementById("rerr").hidden=true;
-  f.hidden=false; document.getElementById("newroute").hidden=true; f.scrollIntoView({behavior:"smooth",block:"start"});
+  f.hidden=false; f.scrollIntoView({behavior:"smooth",block:"start"});
 }
-function closeRouteForm(){document.getElementById("routeform").hidden=true; document.getElementById("newroute").hidden=false; editRoute=null;}
+function closeRouteForm(){document.getElementById("routeform").hidden=true; editRoute=null; pickIds=[];}
+document.getElementById("rstores").addEventListener("click",e=>{const b=e.target.closest("[data-pick]"); if(!b) return; const id=b.dataset.pick;
+  pickIds=pickIds.includes(id)?pickIds.filter(x=>x!==id):[...pickIds,id]; b.classList.toggle("on",pickIds.includes(id)); b.setAttribute("aria-pressed",pickIds.includes(id));});
 document.getElementById("newroute").addEventListener("click",()=>openRouteForm(null));
 document.getElementById("routes").addEventListener("click",e=>{const b=e.target.closest("[data-edit]"); if(b) openRouteForm(routeOf(b.dataset.edit));});
-document.getElementById("rc").addEventListener("change",e=>{const keep=[...document.querySelectorAll("#rstores input:checked")].map(i=>i.value); document.getElementById("rstores").innerHTML=routeStoresHtml(e.target.value,keep);});
+document.getElementById("rc").addEventListener("change",e=>renderPicks(e.target.value));
 document.getElementById("rcancel").addEventListener("click",closeRouteForm);
 document.getElementById("routeform").addEventListener("submit",e=>{
-  e.preventDefault();
-  const name=document.getElementById("rn").value.trim(), county=document.getElementById("rc").value, ids=[...document.querySelectorAll("#rstores input:checked")].map(i=>i.value), err=document.getElementById("rerr");
+  e.preventDefault(); if(!isLead()) return;
+  const name=document.getElementById("rn").value.trim(), county=document.getElementById("rc").value, ids=store.stores.map(s=>s.id).filter(id=>pickIds.includes(id)), err=document.getElementById("rerr");
   if(!name){err.textContent="Give the route a name.";err.hidden=false;return;}
-  if(!ids.length){err.textContent="Pick at least one store.";err.hidden=false;return;}
+  if(!ids.length){err.textContent="Tap at least one store to put it on the route.";err.hidden=false;return;}
   if(editRoute){Object.assign(routeOf(editRoute),{name,county,store_ids:ids});}
   else store.routes.push({id:slug(name)+"-"+Date.now().toString(36),name,county,store_ids:ids});
   save(); closeRouteForm(); renderSched(); toast("Route saved");
@@ -1336,8 +1393,8 @@ armButton(document.getElementById("rdelete"),"Delete route","Tap again to delete
 });
 document.getElementById("go-sched").addEventListener("click",openSched);
 document.getElementById("schedback").addEventListener("click",()=>{closeRouteForm(); showScreen("home");});
-// Home: today's date and your route
-document.getElementById("myday").addEventListener("click",e=>{const b=e.target.closest("[data-myroute]"); if(!b) return; const f=filt(); f.route=b.dataset.myroute; f.county=""; save(); showStores("backstock");});
+// Home: today's date and your route (opens that route's stores in Backstock or Truck Day)
+document.getElementById("myday").addEventListener("click",e=>{const b=e.target.closest("[data-myroute]"); if(!b) return; const f=filt(); f.route=b.dataset.myroute; f.county=""; save(); showStores(b.dataset.kind==="truck"?"truck":"backstock");});
 
 /* ---------- Shelf amounts: how many fit on the floor for every item at one store, all editable at once ---------- */
 let shelfSid="";
@@ -1485,6 +1542,53 @@ function renderHistory(){
  document.getElementById("art-truck").innerHTML=pics(["p:white-claw-vp1","p:truly-berry","p:twisted-tea-party-pack"]);
  const row=pics(["p:miller","p:coors","p:labatt-blue","p:white-claw-black-cherry","p:corona-extra","p:twisted-tea-original","p:yuengling-traditional","p:modelo","p:truly-strawberry-lemonade","p:guinness-draught","p:high-life","p:surfside-iced-tea","p:heineken","p:pbr","p:mike-s-original","p:blue-moon-white","p:athletic-run-wild","p:sun-cruiser-iced-tea-vodka","p:banquet","p:angry-orchard","p:sierra-nevada-hazy-ipa","p:super-lyte"]);
  const shelf=document.getElementById("shelf"); if(row) shelf.innerHTML=`<div class="shelf-track">${row}${row}</div>`; else shelf.hidden=true;}
+/* ---------- Sample week: a full made-up week to show what the app does. Nothing is saved or sent; Exit reloads the real data ---------- */
+function buildSample(){
+  let seed=20261119; const rnd=()=>{seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296;}, pick=(a,b)=>a+Math.floor(rnd()*(b-a+1));
+  const S={custom:store.custom.slice(),lists:{},history:[],shelf:{},inv:{},filt:{county:"",route:""},truckV:2,bsV:3,storesV:3};
+  S.stores=STORES.map(([c,town,num],i)=>({id:c==="kroger"&&town==="Hamburg"?"kroger-brighton":c+"-"+slug(town)+"-"+num,name:CHAINS[c].name+" "+town,chain:c,town,num,county:"Livingston",pos:i}));
+  S.routes=[{id:"sample-north",name:"Hartland · Howell",county:"Livingston",store_ids:S.stores.slice(0,4).map(s=>s.id)},{id:"sample-south",name:"Brighton · Hamburg · Pinckney",county:"Livingston",store_ids:S.stores.slice(4).map(s=>s.id)}];
+  S.people=[{id:"s-keegan",first:"Keegan",last:"Beckstrom",role:"admin"},{id:"s-jordan",first:"Jordan",last:"(sample manager)",role:"manager"},{id:"s-tyler",first:"Tyler",last:"(sample)",role:"employee"},{id:"s-alex",first:"Alex",last:"(sample)",role:"employee"}];
+  S.owner="s-keegan"; S.me={first:"Keegan",last:"Beckstrom"}; S.role="admin";
+  const N="sample-north", So="sample-south", plan={1:[["s-keegan",N,"backstock"],["s-tyler",So,"backstock"]],2:[["s-alex",N,"truck"],["s-tyler",So,"backstock"]],3:[["s-keegan",So,"backstock"],["s-alex",N,"backstock"]],4:[["s-tyler",N,"truck"],["s-keegan",So,"truck"]],5:[["s-keegan",N,"backstock"],["s-alex",So,"backstock"]],6:[["s-alex",N,"backstock"],["s-tyler",So,"truck"]],0:[["s-jordan",N,"backstock"]]};
+  const today=new Date().getDay(); plan[today]=[["s-keegan",N,"backstock"],["s-tyler",So,"backstock"]]; // today: you on a Backstock day, to show the day-before list
+  S.schedule=[]; for(const d in plan) plan[d].forEach(([u,r,k],i)=>S.schedule.push({id:"s-"+d+"-"+i,user_id:u,route_id:r,day:+d,kind:k}));
+  const ITEMS=["miller-24","coors-24","labatt-blue-24","labatt-light-24","yuengling-traditional-24","white-claw-variety-24","white-claw-black-cherry-12-can","twisted-tea-original-12-can","modelo-12-can","corona-extra-12-btl","truly-berry-12-can","high-life-30"].filter(id=>byId[id]);
+  S.stores.forEach(st=>{S.shelf[st.id]={}; S.inv[st.id]={}; ITEMS.forEach(id=>{S.shelf[st.id][id]=pick(6,14); if(rnd()<.8) S.inv[st.id][id]={n:pick(0,10),t:Date.now()-pick(1,40)*36e5};});});
+  // Finished pull lists for the last 6 days, by whoever was on each route; some come up short
+  const myToday=plan[today].find(x=>x[0]==="s-keegan");
+  for(let back=6;back>=1;back--){
+    const day=new Date(); day.setDate(day.getDate()-back); day.setHours(14,0,0,0); const dw=day.getDay();
+    const jobs=(plan[dw]||[]).slice(); if(back===1) jobs.push(["s-alex",myToday[1],"backstock"]); // yesterday: someone worked today's route
+    jobs.forEach(([u,r,k])=>{const who=S.people.find(p=>p.id===u);
+      S.routes.find(x=>x.id===r).store_ids.forEach((sid,i)=>{const items={},need={};
+        ITEMS.forEach(id=>{if(rnd()<.55){const n=pick(2,8); need[id]=n; const o=rnd()<(back===1?.5:.25)?Math.max(0,n-pick(1,3)):n; if(o>0) items[id]=o;}});
+        S.history.push({id:"sample-"+back+"-"+sid+"-"+k,t:day.getTime()+i*25*6e4,sid,sname:S.stores.find(s=>s.id===sid).name,kind:k,user:`${who.first} ${who.last}`,items,need});});});
+  }
+  // Today's Backstock list at the first store on your route, half counted already
+  const first=S.routes.find(x=>x.id===myToday[1]).store_ids[0], l={list:ITEMS.slice(),qty:{},done:{},seen:{},note:{},out:{},floor:{}};
+  ITEMS.forEach((id,i)=>{if(i%2===0){const f=pick(0,S.shelf[first][id]); l.floor[id]=f; l.seen[id]=true; const nd=S.shelf[first][id]-f; if(nd>0) l.qty[id]=nd;}});
+  S.lists["backstock:"+first]=l;
+  return S;
+}
+const SAMPLE_AS={admin:["s-keegan","Keegan","Beckstrom"],manager:["s-jordan","Jordan","(sample manager)"],employee:["s-tyler","Tyler","(sample)"]};
+function sampleView(role){
+  const [id,first,last]=SAMPLE_AS[role]; store.owner=id; store.me={first,last}; store.role=role;
+  document.querySelectorAll("#demobar [data-as]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.as===role));
+  closeRouteForm(); showScreen("home");
+}
+function openSample(){
+  window.DEMO=true; document.body.classList.add("demo"); store=buildSample();
+  const bar=document.createElement("div"); bar.id="demobar"; bar.setAttribute("role","region"); bar.setAttribute("aria-label","Sample week");
+  bar.innerHTML=`<b>Sample week · made-up data, nothing is saved</b><span>View as</span><button data-as="admin">Admin</button><button data-as="manager">Manager</button><button data-as="employee">Employee</button><button class="exit" id="demoexit">Exit sample</button>`;
+  document.body.prepend(bar);
+  bar.addEventListener("click",e=>{const v=e.target.closest("[data-as]"); if(v) sampleView(v.dataset.as); if(e.target.closest("#demoexit")) location.reload();});
+  document.getElementById("go-sample").hidden=true;
+  sampleView("admin");
+  toast("Sample week: try the schedule, a route, a store's Backstock list, the pull list and the shortage report");
+}
+document.getElementById("go-sample").addEventListener("click",openSample);
+
 // Start-up (sign in, then load the team's shared data) is in sync.js
 </script>
 <script src="sync.js"></script>
