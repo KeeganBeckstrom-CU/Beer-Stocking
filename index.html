@@ -403,7 +403,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <main class="wrap">
   <section id="view-fill">
     <div class="actions"><button id="openadd" class="btn primary">+ Add item</button><button id="openshelf" class="btn">Shelf amounts</button><button id="clearlist" class="btn">Clear list</button></div>
-    <button id="undoall" class="btn wide" hidden></button>
     <input id="search" type="search" placeholder="Find on list…" autocomplete="off">
     <div class="progress"><span id="prog">0 of 0 checked</span><div class="bar"><i id="progbar"></i></div></div>
     <p class="hint" id="fillhint"></p>
@@ -471,7 +470,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <input id="addsearch" type="search" placeholder="Search brand, flavor or size" autocomplete="off">
     <button id="opennew" class="btn newbtn">+ Add new item</button>
     <button id="addall" class="btn newbtn">Add every saved item</button>
-    <button id="undoall2" class="btn newbtn" hidden></button>
     <form id="newform" class="form" hidden>
       <h3>New item</h3>
       <div class="field"><label for="nb">Brand</label><input id="nb" list="brandlist" autocomplete="off" placeholder="e.g. White Claw"></div>
@@ -985,7 +983,6 @@ function updateTotals(){
   const seen=state.list.filter(id=>state.seen[id]).length, tot=state.list.length;
   document.getElementById("prog").textContent=`${seen} of ${tot} checked`;
   document.getElementById("progbar").style.width=tot?(seen/tot*100)+"%":"0";
-  showUndoAll();
 }
 function setQty(id,n){
   n=Math.max(0,Math.min(99,n|0));
@@ -1128,28 +1125,7 @@ $addall.addEventListener("click",()=>{
   save();renderResults();updateTotals();
   toast(`Added ${added.length} items`,()=>{st.list=st.list.filter(id=>!added.includes(id));save();if(state===st){renderResults();renderFill();}});
 });
-// Finds items you didn't add yourself: the starting Truck Day list (at the top, in its built-in order)
-// and anything from "Add every saved item" (at the bottom, in saved-item order).
-// Items you typed a count, note or check into are always kept.
-function bulkAdded(){
-  const L=state.list, ci={}, ti={}; catalog.forEach((it,i)=>{ci[it.id]=i;}); TRUCK.forEach((id,i)=>{ti[id]=i;});
-  const out=new Set();
-  if(ctx.startsWith("store:")){let a=0; while(a<L.length&&ti[L[a]]!=null&&(a===0||ti[L[a]]>ti[L[a-1]])) a++; if(a>=15) L.slice(0,a).forEach(id=>out.add(id));}
-  if(L.length>=15){let b=L.length-1; while(b>0&&ci[L[b-1]]!=null&&ci[L[b]]!=null&&ci[L[b-1]]<ci[L[b]]) b--; if(L.length-b>=15) L.slice(b).forEach(id=>out.add(id));}
-  return L.filter(id=>out.has(id)&&!(state.qty[id]||state.seen[id]||state.done[id]||state.note[id]||(state.out&&id in state.out)||(state.floor&&id in state.floor)));
-}
-function showUndoAll(){
-  const n=bulkAdded().length;
-  ["undoall","undoall2"].forEach(x=>{const b=document.getElementById(x); if(!b) return; b.hidden=!n; b.textContent=`Keep only what I added (remove ${n} items)`;});
-}
-function undoAll(){
-  const rm=bulkAdded(); if(!rm.length) return;
-  const snap=JSON.stringify(state), st=state;
-  st.list=st.list.filter(id=>!rm.includes(id)); save(); renderFill(); if(!$sheet.hidden) renderResults();
-  toast(`Removed ${rm.length} items. ${st.list.length} left on the list`,()=>{Object.assign(st,JSON.parse(snap));save();if(state===st){renderFill();updateTotals();}});
-}
-document.getElementById("undoall").addEventListener("click",undoAll);
-document.getElementById("undoall2").addEventListener("click",undoAll);
+
 $form.addEventListener("submit",e=>{
   e.preventDefault();
   const err=document.getElementById("nerr");
