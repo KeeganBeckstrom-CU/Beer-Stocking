@@ -12,3 +12,7 @@ Your name, lists and history are saved in the browser on each phone. Nothing is 
 Copyright (c) 2026 Keegan Beckstrom. All rights reserved.
 
 This code is not open source. It is published here only so the app can be hosted. You may not copy, modify, redistribute or reuse it without written permission. See [LICENSE](LICENSE).
+
+## Updating
+
+When you change the app, bump the version in `version.json` and the matching `V` near the top of `index.html` (and the `sync.js?v=` tag). Phones check `version.json` when the app opens and reload into the new version automatically.
