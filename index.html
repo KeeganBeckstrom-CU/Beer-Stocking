@@ -1732,9 +1732,8 @@ function renderRemoved(){
   const r=(state.removed||[]).filter(o=>byId[o.id]&&!state.list.includes(o.id));
   if(!r.length){el.innerHTML="";return;}
   const open=el.querySelector("details")&&el.querySelector("details").open;
-  const when=t=>new Date(t).toLocaleString(undefined,{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
   el.innerHTML=`<details class="prev"${open?" open":""}><summary>Recently removed (${r.length})</summary><span>Tap Put back to add an item to the list again.</span>`
-    +r.map(o=>{const it=byId[o.id]; return `<div class="rr">${thumb(it)}<span class="nm"><span class="lbl">${esc(full(it))}</span>${chipHtml(it)}<small style="display:block;color:var(--muted)">Removed ${esc(when(o.t))}${o.qty?" · count was "+o.qty:""}</small></span><button class="btn putback" data-id="${esc(o.id)}">Put back</button></div>`;}).join("")
+    +r.map(o=>{const it=byId[o.id]; return `<div class="rr">${thumb(it)}<span class="nm"><span class="lbl">${esc(full(it))}</span>${chipHtml(it)}${o.qty?`<small style="display:block;color:var(--muted)">Count was ${o.qty}</small>`:""}</span><button class="btn putback" data-id="${esc(o.id)}">Put back</button></div>`;}).join("")
     +(r.length>1?`<button class="btn" id="putallback">Put all ${r.length} back</button>`:"")+`</details>`;
 }
 document.getElementById("removedlog").addEventListener("click",e=>{
