@@ -172,6 +172,8 @@ select{max-width:100%;min-width:0;text-overflow:ellipsis}
 .prev>b{font-family:var(--display);font-size:18px;text-transform:uppercase;letter-spacing:.04em}
 .prev>span{font-size:14px;color:var(--muted)}
 .prev .rr{padding:6px 0}.prev .btn{margin-top:6px}
+#removedlog summary{cursor:pointer;font-family:var(--display);font-size:18px;text-transform:uppercase;letter-spacing:.04em}
+#removedlog .rr{display:flex;align-items:center;gap:8px}#removedlog .rr .nm{flex:1}#removedlog .putback{flex:none;margin:0;padding:8px 12px}
 .day{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;box-shadow:var(--shadow);overflow:hidden}
 .day.now{border-color:var(--head);border-width:2.5px}
 .dh{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line)}
@@ -408,6 +410,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <p class="hint" id="fillhint"></p>
     <div id="prevlog"></div>
     <div id="fill"></div>
+    <div id="removedlog"></div>
   </section>
   <section id="view-pull" hidden>
     <div class="actions"><button id="copy" class="btn">Copy list</button><button id="clearcounts" class="btn">Clear counts</button></div>
@@ -915,7 +918,7 @@ const $fill=document.getElementById("fill"), $search=document.getElementById("se
 function hay(it){return (it.brand+" "+it.flavor+" "+it.size+" "+(ALIAS[it.brand.toLowerCase()]||"")+(isNA(it)?" na non-alcoholic":"")).toLowerCase().replace(/'/g,"");}
 function matches(it,q){const h=hay(it);return q.split(/\s+/).filter(Boolean).every(t=>h.includes(t));}
 function renderFill(){
-  renderPrev();
+  renderPrev(); renderRemoved();
   const q=$search.value.trim().toLowerCase().replace(/'/g,"");
   const listed=state.list.map(id=>byId[id]).filter(it=>!q||matches(it,q));
   let html="";
@@ -1015,6 +1018,7 @@ $search.addEventListener("input",renderFill);
 document.getElementById("clearlist").addEventListener("click",()=>{
   if(!state.list.length){toast("The list is already empty");return;}
   const snap=JSON.stringify(state), st=state;
+  noteRemoved(state.list);
   state.list=[];state.qty={};state.done={};state.seen={};state.note={};state.out={};state.floor={};save();$search.value="";renderFill();
   toast("List cleared",()=>{Object.assign(st,JSON.parse(snap));save();if(state===st) renderFill();});
 });
@@ -1104,7 +1108,7 @@ function renderResults(){
 $as.addEventListener("input",renderResults);
 $res.addEventListener("click",e=>{
   const b=e.target.closest(".res"); if(!b) return; const id=b.dataset.id, it=byId[id];
-  if(onList(id)){state.list=state.list.filter(x=>x!==id);delete state.qty[id];delete state.done[id];delete state.seen[id];delete state.note[id];delete state.out[id];delete state.floor[id];toast("Removed "+full(it));}
+  if(onList(id)){noteRemoved([id]);state.list=state.list.filter(x=>x!==id);delete state.qty[id];delete state.done[id];delete state.seen[id];delete state.note[id];delete state.out[id];delete state.floor[id];toast("Removed "+full(it));}
   else{state.list.push(id);toast("Added "+full(it)+" ("+it.size+")");}
   save();renderResults();updateTotals();
 });
@@ -1643,6 +1647,38 @@ document.querySelectorAll('input[type=search]').forEach(inp=>{
   b.addEventListener('mousedown',e=>e.preventDefault());
   b.addEventListener('click',()=>{inp.value=''; inp.dispatchEvent(new Event('input',{bubbles:true})); inp.focus();});
   w.appendChild(b);
+});
+
+/* ---------- Recently removed ---------- */
+// Anything taken off this list is kept here (newest first, last 60) so it can be put back with one tap
+function noteRemoved(ids){
+  const r=state.removed=(state.removed||[]).filter(x=>!ids.includes(x.id)), t=Date.now();
+  ids.slice().reverse().forEach(id=>{const o={id,t}; if(state.qty[id]) o.qty=state.qty[id]; if(state.note[id]) o.note=state.note[id]; if(state.floor&&id in state.floor) o.floor=state.floor[id]; r.unshift(o);});
+  if(r.length>60) r.length=60;
+}
+function putBack(o){
+  if(!state.list.includes(o.id)) state.list.push(o.id);
+  if(o.qty) {state.qty[o.id]=o.qty; state.seen[o.id]=true;}
+  if(o.note) state.note[o.id]=o.note;
+  if(o.floor!=null) {state.floor=state.floor||{}; state.floor[o.id]=o.floor;}
+  state.removed=(state.removed||[]).filter(x=>x.id!==o.id);
+}
+function renderRemoved(){
+  const el=document.getElementById("removedlog"); if(!el) return;
+  const r=(state.removed||[]).filter(o=>byId[o.id]&&!state.list.includes(o.id));
+  if(!r.length){el.innerHTML="";return;}
+  const open=el.querySelector("details")&&el.querySelector("details").open;
+  const when=t=>new Date(t).toLocaleString(undefined,{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+  el.innerHTML=`<details class="prev"${open?" open":""}><summary>Recently removed (${r.length})</summary><span>Tap Put back to add an item to the list again.</span>`
+    +r.map(o=>{const it=byId[o.id]; return `<div class="rr">${thumb(it)}<span class="nm"><span class="lbl">${esc(full(it))}</span>${chipHtml(it)}<small style="display:block;color:var(--muted)">Removed ${esc(when(o.t))}${o.qty?" · count was "+o.qty:""}</small></span><button class="btn putback" data-id="${esc(o.id)}">Put back</button></div>`;}).join("")
+    +(r.length>1?`<button class="btn" id="putallback">Put all ${r.length} back</button>`:"")+`</details>`;
+}
+document.getElementById("removedlog").addEventListener("click",e=>{
+  const one=e.target.closest(".putback"), all=e.target.closest("#putallback"); if(!one&&!all) return;
+  const r=(state.removed||[]).filter(o=>byId[o.id]&&!state.list.includes(o.id));
+  const pick=all?r:r.filter(o=>o.id===one.dataset.id);
+  pick.slice().reverse().forEach(putBack); save(); renderFill();
+  toast(pick.length===1?"Put back "+full(byId[pick[0].id]):`Put back ${pick.length} items`);
 });
 </script>
 <script src="sync.js"></script>
