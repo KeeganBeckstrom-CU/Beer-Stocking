@@ -312,6 +312,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .sheet-body .wrap{padding-block:12px 40px}
 .res{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;background:transparent;color:var(--ink);font:500 16px var(--body);cursor:pointer;min-height:52px}
 .res+.res{border-top:1px solid var(--line)}
+.editbtn{margin-top:4px;padding:3px 10px}
+.btn.danger{color:#a3121f;border-color:rgba(163,18,31,.45)}
+.swaph{margin:18px 0 8px;font-family:var(--display);text-transform:uppercase;letter-spacing:.04em}
+#editcur .res{cursor:default}
 .pill{flex:none;font-size:13px;font-weight:600;padding:5px 10px;border-radius:14px;border:1px solid var(--accent);color:var(--ink)}
 .res.on .pill{background:var(--done);border-color:var(--done);color:#fff}
 .newbtn{width:100%;margin-top:10px}
@@ -485,6 +489,20 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <datalist id="brandlist"></datalist>
     <p id="addhint" class="hint"></p>
     <div id="results" class="plist" hidden></div>
+  </div></div>
+</div>
+<div id="editsheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="edit-title">
+  <div class="sheet-h"><div class="wrap"><h2 id="edit-title">Edit item</h2><button id="closeedit">Done</button></div></div>
+  <div class="sheet-body"><div class="wrap">
+    <div class="plist" id="editcur"></div>
+    <div class="form">
+      <div class="field"><label for="editqty">Count needed</label><input id="editqty" inputmode="numeric" pattern="[0-9]*" placeholder="0" autocomplete="off"></div>
+      <div class="field"><label for="editnote">Note</label><input id="editnote" autocomplete="off" placeholder="e.g. top shelf, end cap, only 2 in back"></div>
+      <div class="formbtns"><button type="button" id="editremove" class="btn danger">Remove from list</button><button type="button" id="editsave" class="btn primary">Save</button></div>
+    </div>
+    <h3 class="swaph">Wrong drink? Swap it</h3>
+    <input id="editsearch" type="search" placeholder="Search for the right brand, flavor or size" autocomplete="off">
+    <div id="editres" class="plist" hidden></div>
   </div></div>
 </div>
 <div id="toast" class="toast" hidden></div>
@@ -936,7 +954,7 @@ function rowHtml(it){
   const n=state.qty[it.id]||0, c=!!state.seen[it.id];
   return `<div class="row${n?" has":""}${c?" checked":""}" data-id="${it.id}">
     <button class="ck" aria-pressed="${c}" aria-label="Checked ${esc(full(it))} ${it.size} on the floor"><span class="box">${c?"✓":""}</span></button>
-    ${thumb(it)}<div class="nm"><span class="lbl">${esc(lbl(it))}</span>${chipHtml(it)}${noteHtml(it)}</div>
+    ${thumb(it)}<div class="nm"><span class="lbl">${esc(lbl(it))}</span>${chipHtml(it)}${noteHtml(it)}<button class="linkbtn editbtn" data-edit="${esc(it.id)}">Edit</button></div>
     <div class="step"><button data-d="-1" aria-label="Less ${esc(full(it))}">−</button><input id="q-${it.id}" inputmode="numeric" pattern="[0-9]*" value="${n||""}" placeholder="0" aria-label="${esc(full(it))} ${esc(it.size)} needed"><button data-d="1" aria-label="More ${esc(full(it))}">+</button></div>${shelfHtml(it)}${isBack()?inbackHtml(it):""}</div>`;
 }
 // How many fit on the shelf here (null = not set yet)
@@ -1000,6 +1018,7 @@ function syncCheck(row,c){row.classList.toggle("checked",c);const b=row.querySel
 $fill.addEventListener("click",e=>{
   const ck=e.target.closest(".ck");
   if(ck){const row=ck.closest(".row"),id=row.dataset.id; if(state.seen[id]) delete state.seen[id]; else state.seen[id]=true; save(); syncCheck(row,!!state.seen[id]); updateBrand(grpOf(byId[id])); updateTotals(); return;}
+  const eb=e.target.closest("[data-edit]"); if(eb){openEdit(eb.dataset.edit);return;}
   const sb_=e.target.closest("[data-shelf]"); if(sb_){openShelf(full(byId[sb_.dataset.shelf])+" "+byId[sb_.dataset.shelf].size);return;}
   const fb=e.target.closest("button[data-f]");
   if(fb){const id=fb.closest(".row").dataset.id; setFloor(id,Math.max(0,(state.floor[id]||0)+Number(fb.dataset.f)));return;}
@@ -1638,6 +1657,51 @@ function openSample(){
 document.getElementById("go-sample").addEventListener("click",openSample);
 
 // Start-up (sign in, then load the team's shared data) is in sync.js
+
+/* ---------- Edit one item on the list ---------- */
+const $edit=document.getElementById("editsheet"), $eq=document.getElementById("editqty"), $en=document.getElementById("editnote"), $es=document.getElementById("editsearch"), $er=document.getElementById("editres");
+let editId=null;
+function openEdit(id){
+  editId=id; const it=byId[id]; if(!it) return;
+  document.getElementById("editcur").innerHTML=`<div class="res">${thumb(it)}<span class="nm"><span class="lbl">${esc(full(it))}</span>${chipHtml(it)}</span></div>`;
+  $eq.value=state.qty[id]||""; $en.value=state.note[id]||""; $es.value=""; $er.hidden=true; $er.innerHTML="";
+  $edit.hidden=false; document.body.style.overflow="hidden";
+}
+function closeEdit(){$edit.hidden=true; document.body.style.overflow=""; editId=null; renderFill();}
+function saveEdit(){
+  if(!editId) return; const id=editId, v=$eq.value.trim();
+  setQty(id,v===""?0:Math.max(0,parseInt(v,10)||0));
+  const note=$en.value.trim(); if(note) state.note[id]=note; else delete state.note[id];
+  save();
+}
+document.getElementById("closeedit").addEventListener("click",()=>{saveEdit();closeEdit();});
+document.getElementById("editsave").addEventListener("click",()=>{saveEdit();closeEdit();toast("Saved");});
+document.getElementById("editremove").addEventListener("click",()=>{
+  if(!editId) return; const id=editId, it=byId[id], snap=JSON.stringify(state), st=state;
+  noteRemoved([id]); state.list=state.list.filter(x=>x!==id);
+  ["qty","done","seen","note","out","floor"].forEach(k=>{if(state[k]) delete state[k][id];});
+  save(); closeEdit();
+  toast("Removed "+full(it),()=>{Object.assign(st,JSON.parse(snap));save();if(state===st) renderFill();});
+});
+$es.addEventListener("input",()=>{
+  const q=$es.value.trim().toLowerCase().replace(/'/g,"");
+  if(!q){$er.hidden=true;$er.innerHTML="";return;}
+  const m=catalog.filter(it=>it.id!==editId&&matches(it,q)).slice(0,60);
+  $er.hidden=!m.length;
+  $er.innerHTML=m.map(it=>`<button class="res" data-id="${it.id}">${thumb(it)}<span class="nm"><span class="lbl">${esc(full(it))}</span>${chipHtml(it)}</span><span class="pill">${onList(it.id)?"On list":"Swap"}</span></button>`).join("");
+});
+// Swapping keeps the spot on the list and carries the count and note over to the new drink
+$er.addEventListener("click",e=>{
+  const b=e.target.closest(".res"); if(!b||!editId) return;
+  saveEdit();
+  const from=editId, to=b.dataset.id, snap=JSON.stringify(state), st=state;
+  if(state.list.includes(to)){state.list=state.list.filter(x=>x!==from);}
+  else state.list[state.list.indexOf(from)]=to;
+  ["qty","done","seen","note","out","floor"].forEach(k=>{const o=state[k]; if(!o) return; if(from in o&&!(to in o)) o[to]=o[from]; delete o[from];});
+  save(); closeEdit();
+  toast(`Swapped to ${full(byId[to])} (${byId[to].size})`,()=>{Object.assign(st,JSON.parse(snap));save();if(state===st) renderFill();});
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$edit.hidden){saveEdit();closeEdit();}});
 
 // Clear (✕) button for every search bar
 document.querySelectorAll('input[type=search]').forEach(inp=>{
